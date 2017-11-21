@@ -4,4 +4,5 @@ __pycache__
 dist/
 histogram.egg-info/
 test*
-
+histogram/histogram_c.so
+histogram/histogram_c.o
