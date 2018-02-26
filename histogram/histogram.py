@@ -69,7 +69,7 @@ class Histogram1D:
         std -= self.mean(index=index)**2
         return np.sqrt(std)
 
-    def show(self, index, axis=None, normed=False, **kwargs):
+    def show(self, index, axis=None, normed=False, log=False, **kwargs):
 
         if axis is None:
 
@@ -102,3 +102,7 @@ class Histogram1D:
         axis.set_xlabel('{}'.format(self.axis_name))
         axis.set_ylabel('count' if not normed else 'probability')
         axis.legend(loc='best')
+
+        if log:
+
+            axis.set_yscale('log')
