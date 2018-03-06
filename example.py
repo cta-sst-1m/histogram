@@ -6,27 +6,33 @@ import time
 
 if __name__ == '__main__':
 
-    my_histo = Histogram1D(data_shape=(2048, ), bin_edges=np.arange(-5, 5, 0.2), axis_name='ADC')
-    dat = np.random.normal(size=(2048, 10000))
+    n_events, n_pixels, n_samples = 100, 1296, 50
+    my_histo = Histogram1D(
+                           data_shape=(n_pixels, ),
+                           bin_edges=np.arange(-5, 5, 0.2),
+                           axis_name='ADC')
+    dat = np.random.normal(size=(n_events, n_pixels, n_samples))
 
     t_0 = time.time()
-    my_histo.fill(data_points=dat)
-    print(time.time() - t_0)
+    for data in dat:
+
+        my_histo.fill(data_points=data)
+
+    print('The Histogram1D took {} seconds to be filled'.format(
+        time.time() - t_0))
 
     t_0 = time.time()
-    hists = np.apply_along_axis(np.histogram, axis=1, arr=dat, range=(-5, 5), bins=50)
-    print(time.time() - t_0)
+    for data in dat:
 
-    # dat = np.random.normal(300, 10, size=(1296, 10000))
-    # my_histo.fill(data_points=dat)
+        hists = np.apply_along_axis(
+            np.histogram,
+            axis=1,
+            arr=data,
+            range=(-5, 5),
+            bins=50)
 
-    print(np.mean(dat, axis=-1))
-    print(my_histo._bin_centers())
-    print(my_histo.data)
-    print(my_histo.underflow)
-    print(my_histo.overflow)
-    print(my_histo.mean())
-    print(my_histo.std())
+    print('Using numpy np.apply_along_axis took {} seconds'.format(
+        time.time() - t_0))
 
     my_histo.draw(index=(10, ), normed=False)
     plt.show()
