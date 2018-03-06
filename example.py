@@ -7,7 +7,7 @@ import time
 if __name__ == '__main__':
 
     my_histo = Histogram1D(data_shape=(2048, ), bin_edges=np.arange(-5, 5, 0.2), axis_name='ADC')
-    dat = np.random.uniform(size=(2048, 10000))
+    dat = np.random.normal(size=(2048, 10000))
 
     t_0 = time.time()
     my_histo.fill(data_points=dat)
@@ -22,12 +22,12 @@ if __name__ == '__main__':
 
     print(np.mean(dat, axis=-1))
 
-    print(my_histo.bin_centers)
+    print(my_histo._bin_centers())
     print(my_histo.data)
     print(my_histo.underflow)
     print(my_histo.overflow)
     print(my_histo.mean())
     print(my_histo.std())
 
-    my_histo.show(index=(10, ), normed=False)
+    my_histo.draw(index=(10, ), normed=False)
     plt.show()
