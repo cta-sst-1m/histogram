@@ -4,6 +4,7 @@ from numpy.ctypeslib import ndpointer
 import os
 from matplotlib.offsetbox import AnchoredText
 import matplotlib.pyplot as plt
+import pickle
 
 lib = np.ctypeslib.load_library("histogram_c", os.path.dirname(__file__))
 histogram = lib.histogram
@@ -25,14 +26,37 @@ class Histogram1D:
         self.data = np.zeros(data_shape + (bin_edges.shape[0] - 1, ), dtype=np.uint32)
         self.shape = self.data.shape
         self.bins = np.sort(bin_edges).astype(np.float32)
-        self.bin_centers = np.diff(self.bins) / 2. + self.bins[:-1]
-        self.n_bins = self.bin_centers.shape[-1]
+        self.n_bins = self.bins.shape[0] - 1
         self.name = name
         self.axis_name = axis_name
         self.underflow = np.zeros(data_shape, dtype=np.uint32)
         self.overflow = np.zeros(data_shape, dtype=np.uint32)
+        self.max = np.ones(data_shape) * - np.inf
+        self.min = np.ones(data_shape) * np.inf
 
     def fill(self, data_points):
+        """
+        :param data_points: ndarray, nan values are ignored
+        :return:
+        """
+
+        try:
+            data_min = np.nanmin(data_points, axis=-1)
+
+        except RuntimeWarning:
+
+            data_min = np.inf
+
+        try:
+
+            data_max = np.nanmax(data_points, axis=-1)
+
+        except RuntimeWarning:
+
+            data_max = -np.inf
+
+        self.min = np.minimum(data_min, self.min)
+        self.max = np.maximum(data_max, self.max)
 
         if data_points.shape[:-1] != self.shape[:-1]:
 
@@ -54,30 +78,64 @@ class Histogram1D:
         self.underflow = self.underflow.reshape(self.shape[:-1])
         self.overflow = self.overflow.reshape(self.shape[:-1])
 
+    def _bin_centers(self):
+
+        return np.diff(self.bins) / 2. + self.bins[:-1]
+
+    def shift(self, value, index=[...]):
+
+        pass
+
     def errors(self, index=[...]):
 
         return np.sqrt(self.data[index])
 
     def mean(self, index=[...]):
 
-        return np.sum(self.data[index] * self.bin_centers, axis=-1) / np.sum(self.data[index], axis=-1)
+        return np.sum(self.data[index] * self._bin_centers(), axis=-1) / np.sum(self.data[index], axis=-1)
 
     def std(self, index=[...]):
 
-        std = np.sum(self.data[index] * self.bin_centers **2, axis=-1)
+        std = np.sum(self.data[index] * self._bin_centers() **2, axis=-1)
         std /= np.sum(self.data[index], axis=-1)
         std -= self.mean(index=index)**2
         return np.sqrt(std)
 
-    def show(self, index, axis=None, normed=False, log=False, **kwargs):
+    def mode(self, index=[...]):
+
+        mode = self.bins[np.argmax(self.data[index], axis=-1)]
+        return mode
+
+    def _write_info(self, index):
+
+        text = ' counts : {}\n' \
+               ' underflow : {}\n' \
+               ' overflow : {}\n' \
+               ' mean : {:.4f}\n' \
+               ' std : {:.4f}\n' \
+               ' mode : {:.1f}\n' \
+               ' max : {:.2f}\n' \
+               ' min : {:.2f}\n' \
+               ''.format(np.sum(self.data[index]),
+                         np.sum(self.underflow[index]),
+                         np.sum(self.overflow[index]),
+                         self.mean(index=index),
+                         self.std(index=index),
+                         self.mode(index=index),
+                         self.max[index],
+                         self.min[index],
+                         )
+
+        return text
+
+    def draw(self, index, axis=None, normed=False, log=False, legend=True, **kwargs):
 
         if axis is None:
 
             fig = plt.figure()
             axis = fig.add_subplot(111)
 
-        text = ' counts : {}\n underflow : {}\n overflow : {}\n mean : {:.4f}\n std : {:.4f}'.format(np.sum(self.data[index]), np.sum(self.underflow[index]), np.sum(self.overflow[index]), self.mean(index=index), self.std(index=index))
-        x = self.bin_centers
+        x = self._bin_centers()
         y = self.data[index]
         err = self.errors(index=index)
         mask = y > 0
@@ -96,8 +154,10 @@ class Histogram1D:
         # steps = axis.bar(x, y, align='center', **kwargs)
         axis.errorbar(x, y, yerr=err, linestyle='None', color=steps[0].get_color())
 
-        anchored_text = AnchoredText(text, loc=2)
-        axis.add_artist(anchored_text)
+        if legend:
+            text = self._write_info(index)
+            anchored_text = AnchoredText(text, loc=2)
+            axis.add_artist(anchored_text)
 
         axis.set_xlabel('{}'.format(self.axis_name))
         axis.set_ylabel('count' if not normed else 'probability')
@@ -106,3 +166,18 @@ class Histogram1D:
         if log:
 
             axis.set_yscale('log')
+
+    def save(self, path):
+
+        with open(path, 'wb') as handle:
+
+            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    @classmethod
+    def load(cls, path):
+
+        with open(path, 'rb') as handle:
+
+            obj = pickle.load(handle)
+
+        return obj
