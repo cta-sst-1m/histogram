@@ -21,7 +21,6 @@ if __name__ == '__main__':
     # my_histo.fill(data_points=dat)
 
     print(np.mean(dat, axis=-1))
-
     print(my_histo._bin_centers())
     print(my_histo.data)
     print(my_histo.underflow)
