@@ -5,11 +5,12 @@ void histogram(const float *data, unsigned int *hist, unsigned int *underflow, u
 {
 
     unsigned int index_hist, index_data, index_bin, first, last;
+    unsigned int i, j;
 
-    for (unsigned int i = 0; i < n_pixels; ++i)
+    for (i = 0; i < n_pixels; ++i)
     {
 
-        for (unsigned int j = 0; j < n_samples; ++j)
+        for (j = 0; j < n_samples; ++j)
 
         {
 
