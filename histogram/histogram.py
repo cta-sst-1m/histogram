@@ -167,6 +167,32 @@ class Histogram1D:
 
             axis.set_yscale('log')
 
+    def draw_all(self, axis=None, n_bins=(None, 10),
+                 normed=False, log=False, legend=True,
+                 **kwargs):
+
+        if axis is None:
+            fig = plt.figure()
+            axis = fig.add_subplot(111)
+
+        if n_bins[0] is None:
+            n_bins = (self.n_bins, n_bins[1])
+        histo = np.zeros(shape=n_bins)
+        x_min = np.min(self.bins)
+        x_max = np.max(self.bins)
+        x = np.linspace(x_min, x_max, n_bins[0] + 1)
+        y_max = np.max(self.data)
+        y_min = np.min(self.data)
+        y = np.linspace(y_min, y_max, n_bins[1] + 1)
+
+        for data in self.data:
+
+            temp = np.histogram2d(self._bin_centers(), data, bins=[x, y])[0]
+            histo += temp
+
+        X, Y = np.meshgrid(x[1:], y[1:])
+        axis.contourf(X, Y, temp.T)
+
     def save(self, path):
 
         with open(path, 'wb') as handle:

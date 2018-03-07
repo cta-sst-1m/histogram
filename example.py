@@ -6,7 +6,7 @@ import time
 
 if __name__ == '__main__':
 
-    n_events, n_pixels, n_samples = 100, 1296, 50
+    n_events, n_pixels, n_samples = 1000, 1296, 50
     my_histo = Histogram1D(
                            data_shape=(n_pixels, ),
                            bin_edges=np.arange(-5, 5, 0.2),
@@ -35,4 +35,7 @@ if __name__ == '__main__':
         time.time() - t_0))
 
     my_histo.draw(index=(10, ), normed=False)
+
+    my_histo.draw_all()
+
     plt.show()
