@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     n_ac, n_dc, n_pixels, n_events, n_samples = 5, 5, 1, 1000, 50
 
-    hist = Histogram1D(bin_edges=np.arange(-20, 20 + 1, 1),
+    hist = Histogram1D(bin_edges=np.arange(-2000, 20000 + 1, 1),
                        data_shape=(n_ac, n_dc, n_pixels))
 
     for i in range(n_ac):
@@ -46,7 +46,7 @@ if __name__ == '__main__':
             for event_id in range(n_events):
 
                 data = np.random.normal(size=(n_pixels, n_samples), loc=i,
-                                        scale=j)
+                                        scale=j+1)
 
                 hist.fill(data, indices=(i, j))
 
@@ -57,5 +57,6 @@ if __name__ == '__main__':
 
     hist = Histogram1D.load('test_comp.pk')
 
+    hist[0, 0, 0].draw()
 
     plt.show()

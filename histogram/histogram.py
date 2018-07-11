@@ -18,7 +18,7 @@ histogram.argtypes = [ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                       ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                       ctypes.c_uint, ctypes.c_uint, ctypes.c_uint]
 
-__all__ = ['Histogram', 'Histogram1D']
+__all__ = ['Histogram1D']
 
 
 class Histogram1D:
@@ -35,6 +35,22 @@ class Histogram1D:
         self.overflow = np.zeros(data_shape, dtype=np.uint32)
         self.max = np.ones(data_shape) * - np.inf
         self.min = np.ones(data_shape) * np.inf
+
+    def __getitem__(self, item):
+
+        if isinstance(item, int):
+
+            item = (item, )
+
+        data_shape = self.shape[len(item):-1]
+        histogram = Histogram1D(bin_edges=self.bins, data_shape=data_shape)
+        histogram.data = self.data[item]
+        histogram.underflow = self.underflow[item]
+        histogram.overflow = self.overflow[item]
+        histogram.max = self.max[item]
+        histogram.min = self.min[item]
+
+        return histogram
 
     def fill(self, data_points, indices=()):
         """
@@ -151,7 +167,7 @@ class Histogram1D:
 
         return text
 
-    def draw(self, index, axis=None, normed=False, log=False, legend=True,
+    def draw(self, index=(), axis=None, normed=False, log=False, legend=True,
              x_label='', **kwargs):
 
         if axis is None:
