@@ -6,39 +6,54 @@ from matplotlib.offsetbox import AnchoredText
 import matplotlib.pyplot as plt
 import pickle
 
+
 lib = np.ctypeslib.load_library("histogram_c", os.path.dirname(__file__))
 histogram = lib.histogram
 
 histogram.argtypes = [ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                       ndpointer(ctypes.c_uint, flags="C_CONTIGUOUS"),
-                       ndpointer(ctypes.c_uint, flags="C_CONTIGUOUS"),
-                       ndpointer(ctypes.c_uint, flags="C_CONTIGUOUS"),
-                       ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                       ctypes.c_uint, ctypes.c_uint, ctypes.c_uint]
+                      ndpointer(ctypes.c_uint, flags="C_CONTIGUOUS"),
+                      ndpointer(ctypes.c_uint, flags="C_CONTIGUOUS"),
+                      ndpointer(ctypes.c_uint, flags="C_CONTIGUOUS"),
+                      ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
+                      ctypes.c_uint, ctypes.c_uint, ctypes.c_uint]
 
-__all__ = ['Histogram1D']
+__all__ = ['Histogram', 'Histogram1D']
 
 
 class Histogram1D:
 
-    def __init__(self,  bin_edges, data_shape=(1, ), name="1D Histogram", axis_name=None):
+    def __init__(self,  bin_edges, data_shape=(1, )):
 
-        self.data = np.zeros(data_shape + (bin_edges.shape[0] - 1, ), dtype=np.uint32)
+        self.data = np.zeros(data_shape + (bin_edges.shape[0] - 1, ),
+                             dtype=np.uint32)
         self.shape = self.data.shape
         self.bins = np.sort(bin_edges).astype(np.float32)
+        self.bin_centers = np.diff(self.bins) / 2. + self.bins[:-1]
         self.n_bins = self.bins.shape[0] - 1
-        self.name = name
-        self.axis_name = axis_name
         self.underflow = np.zeros(data_shape, dtype=np.uint32)
         self.overflow = np.zeros(data_shape, dtype=np.uint32)
         self.max = np.ones(data_shape) * - np.inf
         self.min = np.ones(data_shape) * np.inf
 
-    def fill(self, data_points):
+    def fill(self, data_points, indices=()):
         """
         :param data_points: ndarray, nan values are ignored
+        :param indices: indices of the histogram to be filled
         :return:
         """
+        data = self.data[indices]
+        underflow = self.underflow[indices]
+        overflow = self.overflow[indices]
+        minimum = self.min[indices]
+        maximum = self.max[indices]
+        shape = self.shape[len(indices):]
+        bins = self.bins
+
+        if data_points.shape[:-1] != shape[:-1]:
+            raise IndexError('Invalid value for indices : {}, '
+                             'data_points shape : {}'.format(indices,
+                                                             data_points.shape
+                                                             ))
 
         try:
             data_min = np.nanmin(data_points, axis=-1)
@@ -55,32 +70,36 @@ class Histogram1D:
 
             data_max = -np.inf
 
-        self.min = np.minimum(data_min, self.min)
-        self.max = np.maximum(data_max, self.max)
-
-        if data_points.shape[:-1] != self.shape[:-1]:
-
-            raise IndexError
+        minimum = np.minimum(data_min, minimum)
+        maximum = np.maximum(data_max, maximum)
 
         new_first_axis = 1
-        for i in self.shape[:-1]:
+        for i in shape[:-1]:
             new_first_axis *= i
 
-        data_points = data_points.reshape(new_first_axis, -1).astype(np.float32, order='C')
+        data_points = data_points.reshape(new_first_axis, -1).astype(
+            np.float32, order='C')
 
-        self.data = self.data.reshape(new_first_axis, -1)
-        self.underflow = self.underflow.reshape(new_first_axis, -1)
-        self.overflow = self.overflow.reshape(new_first_axis, -1)
+        n_pixels = data_points.shape[0]
+        n_samples = data_points.shape[1]
+        n_bins = self.n_bins + 1
 
-        histogram(data_points, self.data, self.underflow, self.overflow, self.bins, data_points.shape[0], data_points.shape[-1], self.n_bins + 1)
+        data = data.reshape(new_first_axis, -1)
+        underflow = underflow.reshape(new_first_axis, -1)
+        overflow = overflow.reshape(new_first_axis, -1)
 
-        self.data = self.data.reshape(self.shape)
-        self.underflow = self.underflow.reshape(self.shape[:-1])
-        self.overflow = self.overflow.reshape(self.shape[:-1])
+        histogram(data_points, data, underflow, overflow,
+                  bins, n_pixels, n_samples, n_bins)
 
-    def _bin_centers(self):
+        data = data.reshape(shape)
+        underflow = underflow.reshape(shape[:-1])
+        overflow = overflow.reshape(shape[:-1])
 
-        return np.diff(self.bins) / 2. + self.bins[:-1]
+        self.data[indices] = data
+        self.underflow[indices] = underflow
+        self.overflow[indices] = overflow
+        self.min[indices] = minimum
+        self.max[indices] = maximum
 
     def shift(self, value, index=[...]):
 
@@ -92,11 +111,14 @@ class Histogram1D:
 
     def mean(self, index=[...]):
 
-        return np.sum(self.data[index] * self._bin_centers(), axis=-1) / np.sum(self.data[index], axis=-1)
+        mean = np.sum(self.data[index] * self.bin_centers, axis=-1)
+        mean = mean / np.sum(self.data[index], axis=-1)
+
+        return mean
 
     def std(self, index=[...]):
 
-        std = np.sum(self.data[index] * self._bin_centers() **2, axis=-1)
+        std = np.sum(self.data[index] * self.bin_centers**2, axis=-1)
         std /= np.sum(self.data[index], axis=-1)
         std -= self.mean(index=index)**2
         return np.sqrt(std)
@@ -128,14 +150,15 @@ class Histogram1D:
 
         return text
 
-    def draw(self, index, axis=None, normed=False, log=False, legend=True, **kwargs):
+    def draw(self, index, axis=None, normed=False, log=False, legend=True,
+             x_label='', **kwargs):
 
         if axis is None:
 
             fig = plt.figure()
             axis = fig.add_subplot(111)
 
-        x = self._bin_centers()
+        x = self.bin_centers
         y = self.data[index]
         err = self.errors(index=index)
         mask = y > 0
@@ -150,48 +173,23 @@ class Histogram1D:
             y = y / weights
             err = err / weights
 
-        steps = axis.step(x, y, where='mid', label='{}'.format(index), **kwargs)
-        # steps = axis.bar(x, y, align='center', **kwargs)
-        axis.errorbar(x, y, yerr=err, linestyle='None', color=steps[0].get_color())
+        steps = axis.step(x, y, where='mid', label='{}'.format(index),
+                          **kwargs)
+        axis.errorbar(x, y, yerr=err, linestyle='None',
+                      color=steps[0].get_color())
 
         if legend:
             text = self._write_info(index)
             anchored_text = AnchoredText(text, loc=2)
             axis.add_artist(anchored_text)
 
-        axis.set_xlabel('{}'.format(self.axis_name))
+        axis.set_xlabel(x_label)
         axis.set_ylabel('count' if not normed else 'probability')
         axis.legend(loc='best')
 
         if log:
 
             axis.set_yscale('log')
-
-    def draw_all(self, axis=None, n_bins=(None, 10),
-                 normed=False, log=False, legend=True,
-                 **kwargs):
-
-        if axis is None:
-            fig = plt.figure()
-            axis = fig.add_subplot(111)
-
-        if n_bins[0] is None:
-            n_bins = (self.n_bins, n_bins[1])
-        histo = np.zeros(shape=n_bins)
-        x_min = np.min(self.bins)
-        x_max = np.max(self.bins)
-        x = np.linspace(x_min, x_max, n_bins[0] + 1)
-        y_max = np.max(self.data)
-        y_min = np.min(self.data)
-        y = np.linspace(y_min, y_max, n_bins[1] + 1)
-
-        for data in self.data:
-
-            temp = np.histogram2d(self._bin_centers(), data, bins=[x, y])[0]
-            histo += temp
-
-        X, Y = np.meshgrid(x[1:], y[1:])
-        axis.contourf(X, Y, temp.T)
 
     def save(self, path):
 
