@@ -5,6 +5,7 @@ import os
 from matplotlib.offsetbox import AnchoredText
 import matplotlib.pyplot as plt
 import pickle
+import gzip
 
 
 lib = np.ctypeslib.load_library("histogram_c", os.path.dirname(__file__))
@@ -191,16 +192,16 @@ class Histogram1D:
 
             axis.set_yscale('log')
 
-    def save(self, path):
+    def save(self, path, **kwargs):
 
-        with open(path, 'wb') as handle:
+        with gzip.open(path, 'wb', **kwargs) as handle:
 
             pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def load(cls, path):
 
-        with open(path, 'rb') as handle:
+        with gzip.open(path, 'rb') as handle:
 
             obj = pickle.load(handle)
 

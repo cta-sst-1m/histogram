@@ -52,4 +52,10 @@ if __name__ == '__main__':
 
         hist.draw(index=(i, j, 0))
 
+    hist.save('test.pk', compresslevel=0)
+    hist.save('test_comp.pk')
+
+    hist = Histogram1D.load('test_comp.pk')
+
+
     plt.show()
