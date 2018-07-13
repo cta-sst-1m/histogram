@@ -1,7 +1,8 @@
 from distutils.core import setup, Extension
 import sys
 
-histo_module = Extension('histogram.histogram_c', sources=['histogram/histogram_c.c'])
+histo_module = Extension('histogram.histogram_c',
+                         sources=['histogram/histogram_c.c'])
 
 
 if sys.argv[1] == 'install':
@@ -10,7 +11,7 @@ if sys.argv[1] == 'install':
 
 setup(
     name='histogram',
-    version='0.1.1',
+    version='0.2.0',
     packages=['histogram'],
     url='https://github.com/calispac/histogram',
     license='GNU GPL 3.0',
