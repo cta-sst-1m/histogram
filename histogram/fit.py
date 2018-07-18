@@ -8,11 +8,12 @@ import numpy as np
 
 class HistogramFitter:
 
-    def __init__(self, histogram, print_level=0,
+    def __init__(self, histogram, parameters_plot_name={}, print_level=0,
                  pedantic=False, cost='MLE', **kwargs):
 
         """
         :param histogram:
+        :param parameters_plot_name:
         :param print_level:
         :param pedantic:
         :param cost: Have a look at this article :
@@ -29,11 +30,14 @@ class HistogramFitter:
 
         self.fitter = None
         self.cost = cost
+        self.ndf = np.nan
 
         self.initial_parameters = None
         self.boundary_parameter = None
         self.parameters = None
-        self.parameters_errors = None
+        self.errors = None
+        self.minos_errors = {}
+        self.parameters_plot_name = parameters_plot_name
 
     @abstractmethod
     def pdf(self, x, *params):
@@ -43,7 +47,7 @@ class HistogramFitter:
 
         warnings.warn('Trying to fit without the log of the PDF '
                       'can lead to numerical errors. Define a log_pdf()'
-                      'function in the class : {}'.
+                      ' function in the class : {}'.
                       format(self.__class__.__name__),
                       RuntimeWarning)
 
@@ -69,40 +73,52 @@ class HistogramFitter:
         self.fitter = Minuit(self.cost_function, **options)
         self.fitter.migrad(**kwargs)
 
+        self.ndf = len(self.fitter.list_of_vary_param())
+        self.ndf = np.sum(self.histogram.data > 0) - self.ndf
+
         self.parameters = self.fitter.values
-        self.parameters_errors = self.fitter.errors
+        self.errors = self.fitter.errors
 
     def compute_fit_errors(self, **kwargs):
 
-        self.fitter.minos(**kwargs)
-        self.parameters_errors = self.fitter.get_merrors()
+        try:
+            self.fitter.minos(**kwargs)
+            self.minos_errors = self.fitter.get_merrors()
+
+        except Exception:
+
+            pass
 
     def cost_function(self, *params):
 
-        x = self.histogram.bin_centers
-        bin_width = np.diff(self.histogram.bins)
+        cost = self.cost
+
+        count = self.histogram.data
+        mask = count > 0
+        count = count[mask]
+        x = self.histogram.bin_centers[mask]
+        bin_width = np.diff(self.histogram.bins)[mask]
+        count = count / bin_width
         y = self.pdf(x, *params)
         log_y = self.log_pdf(x, *params)
-        count = self.histogram.data
-        count = count / bin_width
 
-        if self.cost == 'MLE':
+        if cost == 'MLE':
 
             return self._maximum_likelihood_estimator(y, log_y, count)
 
-        elif self.cost == 'NCHI2':
+        elif cost == 'NCHI2':
 
             return self._neymans_chi_square(y, count)
 
-        elif self.cost == 'PCHI2':
+        elif cost == 'PCHI2':
 
             return self._pearsons_chi_square(y, count)
 
-        elif self.cost == 'MCHI2':
+        elif cost == 'MCHI2':
 
             return self._mighells_chi_square(y, count)
 
-        elif self.cost == 'GMLE':
+        elif cost == 'GMLE':
 
             return self._gauss_maximum_likelihood_estimator(y, log_y, count)
 
@@ -119,10 +135,6 @@ class HistogramFitter:
         return cost
 
     def _pearsons_chi_square(self, y, count):
-
-        mask = y > 0
-        count = count[:, mask]
-        y = y[mask]
 
         cost = (y - count)**2 / y
         cost = np.sum(cost, axis=-1)
@@ -152,7 +164,21 @@ class HistogramFitter:
 
         return cost
 
-    def draw(self, index, axes=None, **kwargs):
+    def fit_test(self):
+
+        count = self.histogram.data
+        mask = count > 0
+        count = count[mask]
+        x = self.histogram.bin_centers[mask]
+        bin_width = np.diff(self.histogram.bins)[mask]
+        count = count / bin_width
+        y = self.pdf(x, **self.parameters)
+
+        chi2 = self._pearsons_chi_square(y, count)
+
+        return chi2 / self.ndf
+
+    def draw(self, index=(), axes=None, **kwargs):
 
         axes = self.histogram.draw(index=index, axis=axes, color='k', **kwargs)
         bin_width = np.diff(self.histogram.bins)
@@ -162,12 +188,32 @@ class HistogramFitter:
         x_fit = self.histogram.bin_centers[mask]
         y_fit = self.pdf(x_fit, **self.parameters) * bin_width[mask]
 
-        label_fit = 'Fit :\n'
+        label_fit = r'Fit : $\frac{\chi^2}{ndf}$' + ' : {:.2f}\n'.format(
+            self.fit_test())
+        line = '{} : {:.2f} $\pm$ {:.3f}\n'
+        line_minos = '{name} : ' \
+                     '${{{val:.2f}}}^{{+{upper:.3f}}}_{{{lower:.3f}}}$\n'
 
         for key, val in self.parameters.items():
 
-            label_fit += '{} : {:.2f} $\pm$ {:.3f}\n'.\
-                format(key, val, self.parameters_errors[key])
+            if key in self.parameters_plot_name.keys():
+
+                name = self.parameters_plot_name[key]
+
+            else:
+
+                name = key
+
+            if key in self.minos_errors.keys():
+
+                label_fit += line_minos.format(name=name,
+                                               val=val,
+                                               upper=self.minos_errors[key]['upper'],
+                                               lower=self.minos_errors[key]['lower'])
+
+            else:
+
+                label_fit += line.format(name, val, self.errors[key])
 
         axes.plot(x_fit, y_fit, color='r', label=label_fit)
         axes.legend(loc='best')
