@@ -4,6 +4,7 @@ import warnings
 from iminuit import Minuit
 from iminuit.util import describe
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class HistogramFitter:
@@ -182,15 +183,16 @@ class HistogramFitter:
 
         return chi2 / self.ndf
 
-    def draw(self, index=(), axes=None, **kwargs):
+    def draw(self, index=(), x_label='', **kwargs):
 
-        axes = self.histogram.draw(index=index, axis=axes, color='k', **kwargs)
-        bin_width = np.diff(self.histogram.bins)
+        fig = plt.figure()
+        axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
+        axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2], sharex=axes)
 
-        mask = self.histogram.data[index] > 0
+        self.histogram.draw(index=index, axis=axes, color='k', **kwargs)
 
-        x_fit = self.histogram.bin_centers[mask]
-        y_fit = self.pdf(x_fit, **self.parameters) * bin_width[mask]
+        x_fit = self.bin_centers
+        y_fit = self.pdf(x_fit, **self.parameters) * self.bin_width
 
         label_fit = r'Fit : $\frac{\chi^2}{ndf}$' + ' : {:.2f}\n'.format(
             self.fit_test())
@@ -220,6 +222,19 @@ class HistogramFitter:
                 label_fit += line.format(name, val, self.errors[key])
 
         axes.plot(x_fit, y_fit, color='r', label=label_fit)
+        axes.set_ylabel('count')
+
+        y_residual = (self.count - y_fit) / np.sqrt(self.count)
+        axes_residual.errorbar(x_fit, y_residual, marker='.', ls='None',
+                               color='k')
+        axes_residual.set_xlabel(x_label)
+        axes_residual.set_ylabel('pull')
+
+        mean_residual = np.mean(y_residual)
+        label_residual = 'Mean pull : {:.2f}'.format(mean_residual)
+        axes_residual.axhline(mean_residual, color='k', linestyle='--',
+                              label=label_residual)
+        axes_residual.legend(loc='best')
         axes.legend(loc='best')
 
-        return axes
+        return fig
