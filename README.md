@@ -10,4 +10,4 @@
 
 # Example
 
-![An example](doc/example.svg)
+![An example](docs/example.svg)
