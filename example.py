@@ -1,7 +1,55 @@
 from histogram.histogram import Histogram1D
+from histogram.fit import HistogramFitter
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+
+
+class MyHistogramFitter(HistogramFitter):
+
+    def initialize_fit(self):
+
+        x = self.histogram.bin_centers
+        y = self.histogram.data[0]
+
+        mean = np.average(x, weights=y)
+        std = np.average((x - mean)**2, weights=y)
+        std = np.sqrt(std)
+        amplitude = np.sum(y, dtype=np.float)
+
+        self.initial_parameters = {'mean': mean, 'std': std,
+                                   'amplitude': amplitude}
+
+    def compute_fit_boundaries(self):
+
+        bounds = {}
+
+        for key, val in self.initial_parameters.items():
+
+            if val > 0:
+                bounds['limit_'+key] = (val * 0.5, val * 1.5)
+
+            else:
+
+                bounds['limit_'+key] = (val * 1.5, val * 0.5)
+
+        self.boundary_parameter = bounds
+
+    def pdf(self, x, mean, std, amplitude):
+
+        pdf = (x - mean) / (np.sqrt(2) * std)
+        pdf = - pdf**2
+        pdf = np.exp(pdf)
+        pdf = pdf * amplitude / (std * np.sqrt(2 * np.pi))
+
+        return pdf
+
+    def log_pdf(self, x, mean, std, amplitude):
+
+        temp = np.log(amplitude) - np.log(std * np.sqrt(2 * np.pi))
+        temp = temp - ((x - mean) / (std * np.sqrt(2)))**2
+
+        return temp
 
 
 if __name__ == '__main__':
@@ -59,4 +107,22 @@ if __name__ == '__main__':
 
     hist[0, 0, 0].draw()
 
+    # bins = np.array([-10, -8, -6, -4, -2, -1, -0.5, 0.5, 1, 2, 4, 6, 8, 10])
+    bins = np.linspace(-100, 100 + 1, num=1000)
+    hist = Histogram1D(bin_edges=bins,
+                       data_shape=(1, ))
+
+    n_events = 1000
+    n_samples = 1000
+    for event_id in range(n_events):
+        data = np.random.normal(size=(n_samples, ), loc=0, scale=5)
+
+        hist.fill(data, indices=(0, ))
+
+    fitter = MyHistogramFitter(hist, cost='MLE')
+    fitter.fit(ncall=1000)
+    # fitter.compute_fit_errors()
+    fitter.draw(index=(0, ))
+
+    hist.draw(index=(0, ))
     plt.show()

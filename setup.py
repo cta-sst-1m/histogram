@@ -19,6 +19,6 @@ setup(
     author_email='cyril.alispach@gmail.com',
     long_description=open('README.md').read(),
     description='A package for Histogramming',
-    requires=['numpy', 'matplotlib', 'scipy',],
+    requires=['numpy', 'matplotlib', 'scipy', 'iminuit'],
     ext_modules=[histo_module],
 )
