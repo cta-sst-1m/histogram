@@ -190,8 +190,8 @@ class Histogram1D:
             y = y / weights
             err = err / weights
 
-        steps = axis.step(x, y, where='mid', label='{}'.format(index),
-                          **kwargs)
+        steps = axis.step(x, y, where='mid',
+                          label='Histogram {}'.format(index), **kwargs)
         axis.errorbar(x, y, yerr=err, linestyle='None',
                       color=steps[0].get_color())
 
@@ -207,6 +207,8 @@ class Histogram1D:
         if log:
 
             axis.set_yscale('log')
+
+        return axis
 
     def save(self, path, **kwargs):
 
