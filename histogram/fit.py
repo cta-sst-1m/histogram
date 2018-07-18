@@ -12,10 +12,7 @@ class HistogramFitter:
                  pedantic=False, cost='MLE', **kwargs):
 
         """
-
         :param histogram:
-        :param pdf:
-        :param log_pdf:
         :param print_level:
         :param pedantic:
         :param cost: Have a look at this article :
