@@ -9,8 +9,8 @@ class MyHistogramFitter(HistogramFitter):
 
     def initialize_fit(self):
 
-        x = self.histogram.bin_centers
-        y = self.histogram.data[0]
+        x = self.bin_centers
+        y = self.count
 
         mean = np.average(x, weights=y)
         std = np.average((x - mean)**2, weights=y)
@@ -108,21 +108,20 @@ if __name__ == '__main__':
     hist[0, 0, 0].draw()
 
     # bins = np.array([-10, -8, -6, -4, -2, -1, -0.5, 0.5, 1, 2, 4, 6, 8, 10])
-    bins = np.linspace(-100, 100 + 1, num=1000)
-    hist = Histogram1D(bin_edges=bins,
-                       data_shape=(1, ))
+    bins = np.linspace(-100, 100, num=2000)
+    hist = Histogram1D(bin_edges=bins)
 
     n_events = 1000
     n_samples = 1000
     for event_id in range(n_events):
         data = np.random.normal(size=(n_samples, ), loc=0, scale=5)
 
-        hist.fill(data, indices=(0, ))
+        hist.fill(data)
 
     fitter = MyHistogramFitter(hist, cost='MLE')
     fitter.fit(ncall=1000)
-    # fitter.compute_fit_errors()
-    fitter.draw(index=(0, ))
+    fitter.compute_fit_errors()
+    fitter.draw()
 
-    hist.draw(index=(0, ))
+    hist.draw()
     plt.show()

@@ -28,6 +28,11 @@ class HistogramFitter:
                                 'forced_parameters': self.parameters_name,
                                 **kwargs}
 
+        out = self.compute_data_bounds()
+        self.bin_centers = out[0]
+        self.count = out[1]
+        self.bin_width = out[2]
+
         self.fitter = None
         self.cost = cost
         self.ndf = np.nan
@@ -61,6 +66,16 @@ class HistogramFitter:
     def compute_fit_boundaries(self):
         pass
 
+    def compute_data_bounds(self):
+
+        x = self.histogram.bin_centers
+        y = self.histogram.data
+        bin_width = np.diff(self.histogram.bins)
+
+        mask = y > 0
+
+        return x[mask], y[mask], bin_width[mask]
+
     def fit(self, **kwargs):
 
         self.initialize_fit()
@@ -74,7 +89,7 @@ class HistogramFitter:
         self.fitter.migrad(**kwargs)
 
         self.ndf = len(self.fitter.list_of_vary_param())
-        self.ndf = np.sum(self.histogram.data > 0) - self.ndf
+        self.ndf = len(self.count) - self.ndf
 
         self.parameters = self.fitter.values
         self.errors = self.fitter.errors
@@ -93,14 +108,9 @@ class HistogramFitter:
 
         cost = self.cost
 
-        count = self.histogram.data
-        mask = count > 0
-        count = count[mask]
-        x = self.histogram.bin_centers[mask]
-        bin_width = np.diff(self.histogram.bins)[mask]
-        count = count / bin_width
-        y = self.pdf(x, *params)
-        log_y = self.log_pdf(x, *params)
+        count = self.count / self.bin_width
+        y = self.pdf(self.bin_centers, *params)
+        log_y = self.log_pdf(self.bin_centers, *params)
 
         if cost == 'MLE':
 
@@ -166,15 +176,9 @@ class HistogramFitter:
 
     def fit_test(self):
 
-        count = self.histogram.data
-        mask = count > 0
-        count = count[mask]
-        x = self.histogram.bin_centers[mask]
-        bin_width = np.diff(self.histogram.bins)[mask]
-        count = count / bin_width
-        y = self.pdf(x, **self.parameters)
-
-        chi2 = self._pearsons_chi_square(y, count)
+        y = self.pdf(self.bin_centers, **self.parameters)
+        y = y * self.bin_width
+        chi2 = self._pearsons_chi_square(y, self.count)
 
         return chi2 / self.ndf
 
@@ -206,10 +210,10 @@ class HistogramFitter:
 
             if key in self.minos_errors.keys():
 
-                label_fit += line_minos.format(name=name,
-                                               val=val,
-                                               upper=self.minos_errors[key]['upper'],
-                                               lower=self.minos_errors[key]['lower'])
+                lower = self.minos_errors[key]['lower']
+                upper = self.minos_errors[key]['upper']
+                label_fit += line_minos.format(name=name, val=val, upper=upper,
+                                               lower=lower)
 
             else:
 

@@ -23,7 +23,7 @@ __all__ = ['Histogram1D']
 
 class Histogram1D:
 
-    def __init__(self,  bin_edges, data_shape=(1, )):
+    def __init__(self, bin_edges, data_shape=()):
 
         self.data = np.zeros(data_shape + (bin_edges.shape[0] - 1, ),
                              dtype=np.uint32)
@@ -33,8 +33,16 @@ class Histogram1D:
         self.n_bins = self.bins.shape[0] - 1
         self.underflow = np.zeros(data_shape, dtype=np.uint32)
         self.overflow = np.zeros(data_shape, dtype=np.uint32)
-        self.max = np.ones(data_shape) * - np.inf
-        self.min = np.ones(data_shape) * np.inf
+
+        if not len(data_shape):
+
+            self.max = np.array(-np.inf)
+            self.min = np.array(np.inf)
+
+        else:
+
+            self.max = np.ones(data_shape, dtype=np.ndarray) * - np.inf
+            self.min = np.ones(data_shape, dtype=np.ndarray) * np.inf
 
     def __getitem__(self, item):
 
@@ -47,8 +55,8 @@ class Histogram1D:
         histogram.data = self.data[item]
         histogram.underflow = self.underflow[item]
         histogram.overflow = self.overflow[item]
-        histogram.max = self.max[item]
-        histogram.min = self.min[item]
+        histogram.max = np.array(self.max[item], dtype=np.ndarray)
+        histogram.min = np.array(self.min[item], dtype=np.ndarray)
 
         return histogram
 
@@ -61,6 +69,7 @@ class Histogram1D:
         data = self.data[indices]
         underflow = self.underflow[indices]
         overflow = self.overflow[indices]
+
         minimum = self.min[indices]
         maximum = self.max[indices]
         shape = self.shape[len(indices):]
@@ -115,12 +124,8 @@ class Histogram1D:
         self.data[indices] = data
         self.underflow[indices] = underflow
         self.overflow[indices] = overflow
-        self.min[indices] = minimum
-        self.max[indices] = maximum
-
-    def shift(self, value, index=[...]):
-
-        pass
+        self.min[indices] = np.array(minimum)
+        self.max[indices] = np.array(maximum)
 
     def errors(self, index=[...]):
 
