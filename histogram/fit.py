@@ -193,8 +193,7 @@ class HistogramFitter:
 
         self.draw(index=index, x_label=x_label, axes=axes, **kwargs)
 
-        x_fit = self.bin_centers
-        y_fit = self.pdf(x_fit, **self.parameters) * self.bin_width
+
 
         label_fit = r'Fit : $\frac{\chi^2}{ndf}$' + ' : {:.2f}\n'.format(
             self.fit_test())
@@ -226,12 +225,16 @@ class HistogramFitter:
 
                 label_fit += line.format(name, val, self.errors[key])
 
+        x_fit = self.bin_centers
+        x_fit = np.linspace(x_fit.min(), x_fit.max(), num=len(x_fit) * 10)
+        y_fit = self.pdf(x_fit, **self.parameters)
         axes.plot(x_fit, y_fit, color='r', label=label_fit)
         axes.set_ylabel('count')
 
+        y_fit = self.pdf(self.bin_centers, **self.parameters) * self.bin_width
         y_residual = (self.count - y_fit) / np.sqrt(self.count)
-        axes_residual.errorbar(x_fit, y_residual, marker='.', ls='None',
-                               color='k')
+        axes_residual.errorbar(self.bin_centers, y_residual,
+                               marker='.', ls='None', color='k')
         axes_residual.set_xlabel(x_label)
         axes_residual.set_ylabel('pull')
 
@@ -252,9 +255,6 @@ class HistogramFitter:
 
         self.draw(index=index, x_label=x_label, axes=axes, **kwargs)
 
-        x_fit = self.bin_centers
-        y_fit = self.pdf(x_fit, **self.initial_parameters) * self.bin_width
-
         label_fit = 'Fit initialization \n'
         line = '{} : {:.2f} $\pm$ {:.3f}\n'
 
@@ -273,12 +273,16 @@ class HistogramFitter:
 
             label_fit += line.format(name, val, self.errors[key])
 
+        x_fit = self.bin_centers
+        x_fit = np.linspace(x_fit.min(), x_fit.max(), num=len(x_fit) * 10)
+        y_fit = self.pdf(x_fit, **self.initial_parameters)
         axes.plot(x_fit, y_fit, color='g', label=label_fit)
         axes.set_ylabel('count')
 
+        y_fit = self.pdf(self.bin_centers, **self.parameters) * self.bin_width
         y_residual = (self.count - y_fit) / np.sqrt(self.count)
-        axes_residual.errorbar(x_fit, y_residual, marker='.', ls='None',
-                               color='k')
+        axes_residual.errorbar(self.bin_centers, y_residual,
+                               marker='.', ls='None', color='k')
         axes_residual.set_xlabel(x_label)
         axes_residual.set_ylabel('pull')
 
@@ -298,7 +302,10 @@ class HistogramFitter:
             fig = plt.figure()
             axes = fig.add_subplot(111)
 
+        temp_bin_width = np.diff(self.histogram.bins)
+        self.histogram.data = self.histogram.data / temp_bin_width
         self.histogram.draw(index=index, axis=axes, color='k', **kwargs)
+        self.histogram.data = self.histogram.data * temp_bin_width
 
         axes.set_xlim(self.bin_centers.min(), self.bin_centers.max())
 
