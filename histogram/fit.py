@@ -6,8 +6,6 @@ from iminuit.util import describe
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .histogram import Histogram1D
-
 
 class HistogramFitter:
 
@@ -192,8 +190,6 @@ class HistogramFitter:
         axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2], sharex=axes)
 
         self.draw(index=index, x_label=x_label, axes=axes, **kwargs)
-
-
 
         label_fit = r'Fit : $\frac{\chi^2}{ndf}$' + ' : {:.2f}\n'.format(
             self.fit_test())
