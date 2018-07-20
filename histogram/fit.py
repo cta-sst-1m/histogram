@@ -6,10 +6,13 @@ from iminuit.util import describe
 import numpy as np
 import matplotlib.pyplot as plt
 
+from .histogram import Histogram1D
+
 
 class HistogramFitter:
 
-    def __init__(self, histogram, parameters_plot_name={}, print_level=0,
+    def __init__(self, histogram, initial_parameters={},
+                 parameters_plot_name={}, print_level=0,
                  pedantic=False, cost='MLE', **kwargs):
 
         """
@@ -28,22 +31,21 @@ class HistogramFitter:
                                 'print_level': print_level,
                                 'forced_parameters': self.parameters_name,
                                 **kwargs}
-
-        out = self.compute_data_bounds()
-        self.bin_centers = out[0]
-        self.count = out[1]
-        self.bin_width = out[2]
-
         self.fitter = None
         self.cost = cost
         self.ndf = np.nan
 
-        self.initial_parameters = {}
+        self.initial_parameters = initial_parameters
         self.boundary_parameter = {}
         self.parameters = {}
         self.errors = {}
         self.minos_errors = {}
         self.parameters_plot_name = parameters_plot_name
+
+        out = self.compute_data_bounds()
+        self.bin_centers = out[0]
+        self.count = out[1]
+        self.bin_width = out[2]
 
     @abstractmethod
     def pdf(self, x, *params):
@@ -183,13 +185,13 @@ class HistogramFitter:
 
         return chi2 / self.ndf
 
-    def draw(self, index=(), x_label='', **kwargs):
+    def draw_fit(self, index=(), x_label='', **kwargs):
 
         fig = plt.figure()
         axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
         axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2], sharex=axes)
 
-        self.histogram.draw(index=index, axis=axes, color='k', **kwargs)
+        self.draw(index=index, x_label=x_label, axes=axes, **kwargs)
 
         x_fit = self.bin_centers
         y_fit = self.pdf(x_fit, **self.parameters) * self.bin_width
@@ -205,6 +207,9 @@ class HistogramFitter:
             if key in self.parameters_plot_name.keys():
 
                 name = self.parameters_plot_name[key]
+
+                if self.parameters_plot_name[key] is None:
+                    continue
 
             else:
 
@@ -238,3 +243,63 @@ class HistogramFitter:
         axes.legend(loc='best')
 
         return fig
+
+    def draw_init(self, index=(), x_label='', **kwargs):
+
+        fig = plt.figure()
+        axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
+        axes_residual = fig.add_axes([0.1, 0.1, 0.8, 0.2], sharex=axes)
+
+        self.draw(index=index, x_label=x_label, axes=axes, **kwargs)
+
+        x_fit = self.bin_centers
+        y_fit = self.pdf(x_fit, **self.initial_parameters) * self.bin_width
+
+        label_fit = 'Fit initialization \n'
+        line = '{} : {:.2f} $\pm$ {:.3f}\n'
+
+        for key, val in self.initial_parameters.items():
+
+            if key in self.parameters_plot_name.keys():
+
+                name = self.parameters_plot_name[key]
+
+                if self.parameters_plot_name[key] is None:
+                    continue
+
+            else:
+
+                name = key
+
+            label_fit += line.format(name, val, self.errors[key])
+
+        axes.plot(x_fit, y_fit, color='g', label=label_fit)
+        axes.set_ylabel('count')
+
+        y_residual = (self.count - y_fit) / np.sqrt(self.count)
+        axes_residual.errorbar(x_fit, y_residual, marker='.', ls='None',
+                               color='k')
+        axes_residual.set_xlabel(x_label)
+        axes_residual.set_ylabel('pull')
+
+        mean_residual = np.mean(y_residual)
+        label_residual = 'Mean pull : {:.2f}'.format(mean_residual)
+        axes_residual.axhline(mean_residual, color='k', linestyle='--',
+                              label=label_residual)
+        axes_residual.legend(loc='best')
+        axes.legend(loc='best')
+
+        return axes
+
+    def draw(self, index=(), axes=None, **kwargs):
+
+        if axes is None:
+
+            fig = plt.figure()
+            axes = fig.add_subplot(111)
+
+        self.histogram.draw(index=index, axis=axes, color='k', **kwargs)
+
+        axes.set_xlim(self.bin_centers.min(), self.bin_centers.max())
+
+        return axes
