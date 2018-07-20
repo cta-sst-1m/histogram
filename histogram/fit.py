@@ -38,10 +38,10 @@ class HistogramFitter:
         self.cost = cost
         self.ndf = np.nan
 
-        self.initial_parameters = None
-        self.boundary_parameter = None
-        self.parameters = None
-        self.errors = None
+        self.initial_parameters = {}
+        self.boundary_parameter = {}
+        self.parameters = {}
+        self.errors = {}
         self.minos_errors = {}
         self.parameters_plot_name = parameters_plot_name
 
