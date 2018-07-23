@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 import warnings
 
 from iminuit import Minuit
@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class HistogramFitter:
+class HistogramFitter(metaclass=ABCMeta):
 
     def __init__(self, histogram, initial_parameters={},
                  parameters_plot_name={}, print_level=0,
@@ -81,6 +81,10 @@ class HistogramFitter:
 
         self.initialize_fit()
         self.compute_fit_boundaries()
+        out = self.compute_data_bounds()
+        self.bin_centers = out[0]
+        self.count = out[1]
+        self.bin_width = out[2]
 
         options = {**self.iminuit_options,
                    **self.initial_parameters,
