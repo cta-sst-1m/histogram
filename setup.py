@@ -11,7 +11,7 @@ if sys.argv[1] == 'install':
 
 setup(
     name='histogram',
-    version='0.3.1',
+    version='0.3.2',
     packages=['histogram'],
     url='https://github.com/calispac/histogram',
     license='GNU GPL 3.0',
