@@ -29,7 +29,6 @@ class HistogramFitter(metaclass=ABCMeta):
                                 'print_level': print_level,
                                 'forced_parameters': self.parameters_name,
                                 **kwargs}
-        self.fitter = None
         self.cost = cost
         self.ndf = np.nan
 
@@ -90,24 +89,24 @@ class HistogramFitter(metaclass=ABCMeta):
                    **self.initial_parameters,
                    **self.boundary_parameter}
 
-        self.fitter = Minuit(self.cost_function, **options)
-        self.fitter.migrad(**kwargs)
+        fitter = Minuit(self.cost_function, **options)
+        fitter.migrad(**kwargs)
 
-        self.ndf = len(self.fitter.list_of_vary_param())
+        self.ndf = len(fitter.list_of_vary_param())
         self.ndf = len(self.count) - self.ndf
 
-        self.parameters = self.fitter.values
-        self.errors = self.fitter.errors
-
-    def compute_fit_errors(self, **kwargs):
+        self.parameters = fitter.values
+        self.errors = fitter.errors
 
         try:
-            self.fitter.minos(**kwargs)
-            self.minos_errors = self.fitter.get_merrors()
+            fitter.minos()
+            fitter.get_merrors()
 
         except Exception:
 
             pass
+
+        return
 
     def cost_function(self, *params):
 
