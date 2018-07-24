@@ -173,7 +173,7 @@ class Histogram1D:
         return text
 
     def draw(self, index=(), axis=None, normed=False, log=False, legend=True,
-             x_label='', **kwargs):
+             x_label='', label='Histogram', **kwargs):
 
         if axis is None:
 
@@ -196,7 +196,7 @@ class Histogram1D:
             err = err / weights
 
         steps = axis.step(x, y, where='mid',
-                          label='Histogram {}'.format(index), **kwargs)
+                          label=label, **kwargs)
         axis.errorbar(x, y, yerr=err, linestyle='None',
                       color=steps[0].get_color())
 

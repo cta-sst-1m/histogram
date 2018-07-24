@@ -178,9 +178,13 @@ class HistogramFitter(metaclass=ABCMeta):
 
         return cost
 
-    def fit_test(self):
+    def fit_test(self, **params):
 
-        y = self.pdf(self.bin_centers, **self.parameters)
+        if not params:
+
+            params = self.parameters
+
+        y = self.pdf(self.bin_centers, **params)
         y = y * self.bin_width
         chi2 = self._pearsons_chi_square(y, self.count)
 
@@ -254,7 +258,9 @@ class HistogramFitter(metaclass=ABCMeta):
 
         self.draw(index=index, x_label=x_label, axes=axes, **kwargs)
 
-        label_fit = 'Fit initialization \n'
+        label_fit = r'Fit initialization: $\frac{\chi^2}{ndf}$'
+        label_fit = label_fit + ' : {:.2f}\n'.format(
+            self.fit_test(**self.initial_parameters))
         line = '{} : {:.2f} $\pm$ {:.3f}\n'
 
         for key, val in self.initial_parameters.items():
