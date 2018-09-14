@@ -127,22 +127,62 @@ class Histogram1D:
         self.min[indices] = np.array(minimum)
         self.max[indices] = np.array(maximum)
 
+    def reset(self):
+
+        self.data[:] = 0
+        self.min[:] = 0
+        self.max[:] = 0
+        self.underflow[:] = 0
+        self.overflow[:] = 0
+
     def errors(self, index=[...]):
 
         return np.sqrt(self.data[index])
 
-    def mean(self, index=[...]):
+    def mean(self, index=[...], method='left'):
 
-        mean = np.sum(self.data[index] * self.bin_centers, axis=-1)
+        if method == 'left':
+
+            bins = self.bins[:-1]
+
+        elif method == 'right':
+
+            bins = self.bins[1:]
+
+        elif method == 'mid':
+
+            bins = self.bin_centers
+
+        else:
+
+            raise ValueError('Unknown method {}'.format(method))
+
+        mean = np.sum(self.data[index] * bins, axis=-1)
         mean = mean / np.sum(self.data[index], axis=-1)
 
         return mean
 
-    def std(self, index=[...]):
+    def std(self, index=[...], method='left'):
 
-        std = np.sum(self.data[index] * self.bin_centers**2, axis=-1)
+        if method == 'left':
+
+            bins = self.bins[:-1]
+
+        elif method == 'right':
+
+            bins = self.bins[1:]
+
+        elif method == 'mid':
+
+            bins = self.bin_centers
+
+        else:
+
+            raise ValueError('Unknown method {}'.format(method))
+
+        std = np.sum(self.data[index] * bins**2, axis=-1)
         std /= np.sum(self.data[index], axis=-1)
-        std -= self.mean(index=index)**2
+        std -= self.mean(index=index, method=method)**2
         return np.sqrt(std)
 
     def mode(self, index=[...]):
