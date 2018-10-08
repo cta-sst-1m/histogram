@@ -34,16 +34,6 @@ class Histogram1D:
         self.underflow = np.zeros(data_shape, dtype=np.uint32)
         self.overflow = np.zeros(data_shape, dtype=np.uint32)
 
-        if not len(data_shape):
-
-            self.max = np.array(-np.inf)
-            self.min = np.array(np.inf)
-
-        else:
-
-            self.max = np.ones(data_shape, dtype=np.ndarray) * - np.inf
-            self.min = np.ones(data_shape, dtype=np.ndarray) * np.inf
-
     def __getitem__(self, item):
 
         if isinstance(item, int):
@@ -55,8 +45,6 @@ class Histogram1D:
         histogram.data = self.data[item]
         histogram.underflow = self.underflow[item]
         histogram.overflow = self.overflow[item]
-        histogram.max = np.array(self.max[item], dtype=np.ndarray)
-        histogram.min = np.array(self.min[item], dtype=np.ndarray)
 
         return histogram
 
@@ -70,8 +58,6 @@ class Histogram1D:
         underflow = self.underflow[indices]
         overflow = self.overflow[indices]
 
-        minimum = self.min[indices]
-        maximum = self.max[indices]
         shape = self.shape[len(indices):]
         bins = self.bins
 
@@ -80,24 +66,6 @@ class Histogram1D:
                              'data_points shape : {}'.format(indices,
                                                              data_points.shape
                                                              ))
-
-        try:
-            data_min = np.nanmin(data_points, axis=-1)
-
-        except RuntimeWarning:
-
-            data_min = np.inf
-
-        try:
-
-            data_max = np.nanmax(data_points, axis=-1)
-
-        except RuntimeWarning:
-
-            data_max = -np.inf
-
-        minimum = np.minimum(data_min, minimum)
-        maximum = np.maximum(data_max, maximum)
 
         new_first_axis = 1
         for i in shape[:-1]:
@@ -124,16 +92,12 @@ class Histogram1D:
         self.data[indices] = data
         self.underflow[indices] = underflow
         self.overflow[indices] = overflow
-        self.min[indices] = np.array(minimum)
-        self.max[indices] = np.array(maximum)
 
     def reset(self):
 
-        self.data[:] = 0
-        self.min[:] = 0
-        self.max[:] = 0
-        self.underflow[:] = 0
-        self.overflow[:] = 0
+        self.data.fill(0)
+        self.underflow.fill(0)
+        self.overflow.fill(0)
 
     def errors(self, index=[...]):
 
@@ -187,10 +151,58 @@ class Histogram1D:
 
     def mode(self, index=[...]):
 
+        if self.is_empty():
+
+            return np.zeros(self.shape) * np.nan
+
         mode = self.bins[np.argmax(self.data[index], axis=-1)]
         return mode
 
+    def min(self, index=[...]):
+
+        if self.is_empty():
+
+            return np.ones(self.shape) * np.nan
+
+        else:
+
+            data = self.data
+            data[data == 0] = np.inf
+            min = np.argmin(data, axis=-1)
+            min = self.bin_centers[min]
+
+            return min[index]
+
+    def max(self, index=[...]):
+
+        if self.is_empty():
+
+            return np.ones(self.shape) * np.nan
+
+        else:
+
+            max = np.argmax(self.data, axis=-1)
+            max = self.bin_centers[max]
+
+        return max[index]
+
+    def is_empty(self):
+
+        n_points = np.sum(self.data)
+
+        if n_points > 0:
+
+            return False
+
+        else:
+
+            return True
+
     def _write_info(self, index):
+
+        print('hello')
+        print(self.min(index))
+        print(self.max(index))
 
         text = ' counts : {}\n' \
                ' underflow : {}\n' \
@@ -199,16 +211,17 @@ class Histogram1D:
                ' std : {:.4f}\n' \
                ' mode : {:.1f}\n' \
                ' max : {:.2f}\n' \
-               ' min : {:.2f}\n' \
-               ''.format(np.sum(self.data[index]),
+               ' min : {:.2f}\n'.format(np.sum(self.data[index]),
                          np.sum(self.underflow[index]),
                          np.sum(self.overflow[index]),
                          self.mean(index=index),
                          self.std(index=index),
                          self.mode(index=index),
-                         self.max[index],
-                         self.min[index],
+                         self.max(index=index),
+                         self.min(index=index),
                          )
+
+        print(text)
 
         return text
 

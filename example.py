@@ -120,8 +120,12 @@ if __name__ == '__main__':
 
     fitter = MyHistogramFitter(hist, cost='MLE')
     fitter.fit(ncall=1000)
-    fitter.compute_fit_errors()
     fitter.draw_fit()
+    hist.draw()
+
+    hist.reset()
 
     hist.draw()
     plt.show()
+
+
