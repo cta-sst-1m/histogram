@@ -65,7 +65,7 @@ def test_mean_and_std():
     bin_edges = histo.bins
 
     n_data = 50
-    datas = np.random.randint(bin_edges.min()+1, bin_edges.max()-1,
+    datas = np.random.randint(bin_edges.min(), bin_edges.max(),
                               size=(n_data, n_histo, 30))
 
     mean_data = np.zeros(n_histo)
