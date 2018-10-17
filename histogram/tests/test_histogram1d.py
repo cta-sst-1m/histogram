@@ -3,21 +3,33 @@ import numpy as np
 from copy import copy
 import tempfile
 
-bin_edges = np.arange(1000)
-n_histo = 100
-data_shape = (n_histo,)
-histo = Histogram1D(bin_edges=bin_edges, data_shape=data_shape)
 
+def _make_dummy_histo():
 
-def test_create():
+    bin_edges = np.arange(1000)
+    n_histo = 100
+    data_shape = (n_histo,)
+    histo = Histogram1D(bin_edges=bin_edges, data_shape=data_shape)
 
     assert histo.shape == data_shape + (len(bin_edges) - 1, )
+
+    return histo
+
+
+def test_init():
+
+    histo = _make_dummy_histo()
+
     assert histo.data.sum() == 0
     assert histo.underflow.sum() == 0
     assert histo.overflow.sum() == 0
 
 
 def test_add():
+
+    histo = _make_dummy_histo()
+
+    n_histo = histo.shape[0]
 
     histo_1 = copy(histo)
     histo_2 = copy(histo)
@@ -38,7 +50,41 @@ def test_add():
 
 def test_save_and_load():
 
+    histo = _make_dummy_histo()
+
     with tempfile.NamedTemporaryFile() as f:
 
         histo.save(f.name)
         Histogram1D.load(f.name)
+
+
+def test_mean_and_std():
+
+    histo = _make_dummy_histo()
+    n_histo = histo.shape[0]
+    bin_edges = histo.bins
+
+    n_data = 50
+    datas = np.random.randint(bin_edges.min()+1, bin_edges.max()-1,
+                              size=(n_data, n_histo, 30))
+
+    mean_data = np.zeros(n_histo)
+    std_data = np.zeros(n_histo)
+
+    for data in datas:
+
+        mean_data += np.mean(data, axis=-1)
+        std_data += np.mean(data**2, axis=-1)
+        histo.fill(data)
+
+    mean_data /= n_data
+    std_data /= n_data
+    std_data -= mean_data**2
+    std_data = np.sqrt(std_data)
+
+    mean_histo = histo.mean()
+    std_histo = histo.std()
+
+    assert mean_histo.shape == (n_histo, )
+    assert (mean_histo - mean_data).sum() <= 1e-12
+    assert (std_histo - std_data).sum() <= 1e-12
