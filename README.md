@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/cta-sst-1m/histogram.svg?branch=master)]
+[![Build Status](https://travis-ci.org/cta-sst-1m/histogram.svg?branch=master)](https://travis-ci.com/cta-sst-1m/histogram/)
 
 # Requirements
 
