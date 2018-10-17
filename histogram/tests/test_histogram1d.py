@@ -88,3 +88,29 @@ def test_mean_and_std():
     assert mean_histo.shape == (n_histo, )
     assert (mean_histo - mean_data).sum() <= 1e-11
     assert (std_histo - std_data).sum() <= 1e-11
+
+
+def test_overflow():
+
+    histo = _make_dummy_histo()
+    n = 100
+    n_histo = histo.shape[0]
+    data = np.ones((histo.shape[0], n))
+
+    histo.fill(data * histo.bins.max())
+    assert histo.overflow.sum() == (n * n_histo)
+    histo.fill(data * histo.bins.max() - 1)
+    assert histo.overflow.sum() == (n * n_histo)
+
+
+def test_underflow():
+
+    histo = _make_dummy_histo()
+    n = 100
+    n_histo = histo.shape[0]
+    data = np.ones((histo.shape[0], n))
+
+    histo.fill(data * histo.bins.min() - 1)
+    assert histo.underflow.sum() == (n * n_histo)
+    histo.fill(data * histo.bins.min())
+    assert histo.underflow.sum() == (n * n_histo)
