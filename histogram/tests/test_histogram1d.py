@@ -86,5 +86,5 @@ def test_mean_and_std():
     std_histo = histo.std()
 
     assert mean_histo.shape == (n_histo, )
-    assert (mean_histo - mean_data).sum() <= 1e-12
-    assert (std_histo - std_data).sum() <= 1e-12
+    assert (mean_histo - mean_data).sum() <= 1e-11
+    assert (std_histo - std_data).sum() <= 1e-11
