@@ -8,6 +8,7 @@ import pickle
 import gzip
 
 
+
 lib = np.ctypeslib.load_library("histogram_c", os.path.dirname(__file__))
 histogram = lib.histogram
 
@@ -47,6 +48,24 @@ class Histogram1D:
         histogram.overflow = self.overflow[item]
 
         return histogram
+
+    def __add__(self, other):
+
+        self._is_compatible(other)
+
+        new_histo = Histogram1D(bin_edges=self.bins,
+                                data_shape=self.shape[:-1])
+
+        new_histo.data += self.data + other.data
+        new_histo.overflow += self.overflow + other.overflow
+        new_histo.underflow += self.underflow + other.underflow
+
+        return new_histo
+
+    def _is_compatible(self, other):
+
+        assert self.shape == other.shape
+        assert (self.bins == other.bins).all()
 
     def fill(self, data_points, indices=()):
         """
@@ -166,8 +185,8 @@ class Histogram1D:
 
         else:
 
-            data = self.data
-            data[data == 0] = np.inf
+            data = np.ma.masked_array(self.data, mask=self.data<=0)
+            # data[data == 0] = np.max(self.data, axis=-1)
             min = np.argmin(data, axis=-1)
             min = self.bin_centers[min]
 
