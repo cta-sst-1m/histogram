@@ -1,9 +1,7 @@
 language: generic
-
 install:
 - pip install --upgrade pip
 - pip install .
 script:
 - pytest histogram
-
 branch: master
