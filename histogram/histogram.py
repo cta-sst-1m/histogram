@@ -8,7 +8,6 @@ import pickle
 import gzip
 
 
-
 lib = np.ctypeslib.load_library("histogram_c", os.path.dirname(__file__))
 histogram = lib.histogram
 
@@ -185,8 +184,7 @@ class Histogram1D:
 
         else:
 
-            data = np.ma.masked_array(self.data, mask=self.data<=0)
-            # data[data == 0] = np.max(self.data, axis=-1)
+            data = np.ma.masked_array(self.data, mask=(self.data <= 0))
             min = np.argmin(data, axis=-1)
             min = self.bin_centers[min]
 
@@ -218,10 +216,6 @@ class Histogram1D:
             return True
 
     def _write_info(self, index):
-
-        print('hello')
-        print(self.min(index))
-        print(self.max(index))
 
         text = ' counts : {}\n' \
                ' underflow : {}\n' \
