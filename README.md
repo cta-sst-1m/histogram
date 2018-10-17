@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cta-sst-1m/histogram.svg?branch=master)]
+
 # Requirements
 
 - Cython
