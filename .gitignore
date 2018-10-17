@@ -3,6 +3,5 @@ __pycache__
 .idea/*
 dist/
 histogram.egg-info/
-test*
 histogram/histogram_c.so
 histogram/histogram_c.o
