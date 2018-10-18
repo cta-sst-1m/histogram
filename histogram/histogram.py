@@ -16,7 +16,8 @@ histogram.argtypes = [ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
                       ndpointer(ctypes.c_uint, flags="C_CONTIGUOUS"),
                       ndpointer(ctypes.c_uint, flags="C_CONTIGUOUS"),
                       ndpointer(ctypes.c_float, flags="C_CONTIGUOUS"),
-                      ctypes.c_uint, ctypes.c_uint, ctypes.c_uint]
+                      ctypes.c_uint, ctypes.c_uint, ctypes.c_uint,
+                      ctypes.c_uint, ctypes.c_uint]
 
 __all__ = ['Histogram1D']
 
@@ -24,6 +25,8 @@ __all__ = ['Histogram1D']
 class Histogram1D:
 
     def __init__(self, bin_edges, data_shape=()):
+
+        assert len(data_shape) <= 2
 
         self.data = np.zeros(data_shape + (bin_edges.shape[0] - 1, ),
                              dtype=np.uint32)
@@ -33,6 +36,20 @@ class Histogram1D:
         self.n_bins = self.bins.shape[0] - 1
         self.underflow = np.zeros(data_shape, dtype=np.uint32)
         self.overflow = np.zeros(data_shape, dtype=np.uint32)
+
+        if len(data_shape) == 1:
+
+            self.n_0 = 0
+            self.n_1 = data_shape[0]
+        elif len(data_shape) == 2:
+
+            self.n_0 = data_shape[0]
+            self.n_1 = data_shape[1]
+
+        else:
+
+            self.n_0 = 0
+            self.n_1 = 1
 
     def __getitem__(self, item):
 
@@ -72,44 +89,22 @@ class Histogram1D:
         :param indices: indices of the histogram to be filled
         :return:
         """
-        data = self.data[indices]
-        underflow = self.underflow[indices]
-        overflow = self.overflow[indices]
 
-        shape = self.shape[len(indices):]
-        bins = self.bins
+        data_points = data_points.astype(np.float32, order='C')
 
-        if data_points.shape[:-1] != shape[:-1]:
-            raise IndexError('Invalid value for indices : {}, '
-                             'data_points shape : {}'.format(indices,
-                                                             data_points.shape
-                                                             ))
+        assert isinstance(indices, int) or indices == ()
+        if isinstance(indices, int):
+            assert indices < self.data.shape[0]
+        assert data_points.shape[:-1] == self.data[indices].shape[:-1]
 
-        new_first_axis = 1
-        for i in shape[:-1]:
-            new_first_axis *= i
+        n_samples = data_points.shape[-1]
+        index = indices if isinstance(indices, int) else 0
 
-        data_points = data_points.reshape(new_first_axis, -1).astype(
-            np.float32, order='C')
+        histogram(data_points, self.data, self.underflow, self.overflow,
+                  self.bins, index, self.n_0, self.n_1, n_samples,
+                  self.n_bins)
 
-        n_pixels = data_points.shape[0]
-        n_samples = data_points.shape[1]
-        n_bins = self.n_bins + 1
-
-        data = data.reshape(new_first_axis, -1)
-        underflow = underflow.reshape(new_first_axis, -1)
-        overflow = overflow.reshape(new_first_axis, -1)
-
-        histogram(data_points, data, underflow, overflow,
-                  bins, n_pixels, n_samples, n_bins)
-
-        data = data.reshape(shape)
-        underflow = underflow.reshape(shape[:-1])
-        overflow = overflow.reshape(shape[:-1])
-
-        self.data[indices] = data
-        self.underflow[indices] = underflow
-        self.overflow[indices] = overflow
+        return
 
     def reset(self):
 

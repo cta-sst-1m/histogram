@@ -7,7 +7,7 @@ import tempfile
 def _make_dummy_histo():
 
     bin_edges = np.arange(1000)
-    n_histo = 100
+    n_histo = 2
     data_shape = (n_histo,)
     histo = Histogram1D(bin_edges=bin_edges, data_shape=data_shape)
 
@@ -93,6 +93,24 @@ def test_mean_and_std():
     assert (std_histo - std_data).sum() <= 1e-11
 
 
+def test_fill():
+
+    histo = _make_dummy_histo()
+    n_histo = histo.shape[0]
+
+    data = np.ones((n_histo, 1)) * 50
+    n = 100
+
+    for i in range(n):
+
+        histo.fill(data)
+
+    print(histo.data.sum())
+    assert (histo.data[:, 50] == n).all()
+    assert (histo.data[:, 50 + 1] == 0).all()
+    assert (histo.data[:, 50 - 1] == 0).all()
+
+
 def test_overflow():
 
     histo = _make_dummy_histo()
@@ -117,3 +135,27 @@ def test_underflow():
     assert histo.underflow.sum() == (n * n_histo)
     histo.fill(data * histo.bins.min())
     assert histo.underflow.sum() == (n * n_histo)
+
+
+def test_fill_indices():
+
+    bin_edges = np.arange(10)
+    n_histo = 4
+    n_pixels = 3
+    data_shape = (n_histo, n_pixels)
+    histo = Histogram1D(bin_edges=bin_edges, data_shape=data_shape)
+
+    index_to_fill = 1
+    for i in range(10):
+
+        data = np.ones((n_pixels, 30))
+        histo.fill(data, indices=index_to_fill)
+
+    assert histo.data[index_to_fill][:, 1].sum() == 10 * 30 * n_pixels
+    assert histo.data.sum() == 10 * 30 * n_pixels
+
+
+if __name__ == '__main__':
+
+    test_fill()
+    test_fill_indices()
