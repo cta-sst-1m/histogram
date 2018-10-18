@@ -2,6 +2,7 @@ from histogram.histogram import Histogram1D
 import numpy as np
 from copy import copy
 import tempfile
+from sys import getsizeof
 
 
 def _make_dummy_histo():
@@ -153,6 +154,11 @@ def test_fill_indices():
 
     assert histo.data[index_to_fill][:, 1].sum() == 10 * 30 * n_pixels
     assert histo.data.sum() == 10 * 30 * n_pixels
+
+
+def test_memory_allocation():
+
+    pass
 
 
 if __name__ == '__main__':

@@ -28,9 +28,13 @@ class Histogram1D:
 
         assert len(data_shape) <= 2
 
+        # Since np.zeros does not allocate memory as long as
+        # it is not accessed we force it to access it at first
+        # by multiplying by 0
         self.data = np.zeros(data_shape + (bin_edges.shape[0] - 1, ),
-                             dtype=np.uint32)
+                             dtype=np.uint32) * 0
         self.shape = self.data.shape
+        self.size = self.data.size
         self.bins = np.sort(bin_edges).astype(np.float32)
         self.bin_centers = np.diff(self.bins) / 2. + self.bins[:-1]
         self.n_bins = self.bins.shape[0] - 1
