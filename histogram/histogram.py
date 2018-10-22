@@ -223,7 +223,7 @@ class Histogram1D:
                ' std : {:.4f}\n' \
                ' mode : {:.1f}\n' \
                ' max : {:.2f}\n' \
-               ' min : {:.2f}\n'.format(np.sum(self.data[index]),
+               ' min : {:.2f}'.format(np.sum(self.data[index]),
                          np.sum(self.underflow[index]),
                          np.sum(self.overflow[index]),
                          self.mean(index=index),
