@@ -1,4 +1,0 @@
-{
-  "histogram/tests/test_histogram1d.py::test_create": true,
-  "histogram/tests/test_histogram1d.py::test_underflow_overflow": true
-}
