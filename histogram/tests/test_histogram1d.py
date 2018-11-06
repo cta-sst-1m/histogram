@@ -2,7 +2,7 @@ from histogram.histogram import Histogram1D
 import numpy as np
 from copy import copy
 import tempfile
-
+import os
 
 def _make_dummy_histo():
 
@@ -57,8 +57,19 @@ def test_save_and_load():
 
     with tempfile.NamedTemporaryFile() as f:
 
-        histo.save(f.name)
-        Histogram1D.load(f.name)
+        path, extension = os.path.splitext(f.name)
+
+        for ext in ['.pk', '.fits']:
+
+            filename = path + ext
+
+            histo.save(filename)
+            loaded_histo = Histogram1D.load(filename)
+
+            assert (histo.data == loaded_histo.data).all()
+            assert (histo.bins == loaded_histo.bins).all()
+            assert (histo.underflow == loaded_histo.underflow).all()
+            assert (histo.overflow == loaded_histo.overflow).all()
 
 
 def test_mean_and_std():
