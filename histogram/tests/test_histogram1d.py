@@ -2,7 +2,6 @@ from histogram.histogram import Histogram1D
 import numpy as np
 from copy import copy
 import tempfile
-from sys import getsizeof
 
 
 def _make_dummy_histo():
