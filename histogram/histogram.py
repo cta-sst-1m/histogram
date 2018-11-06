@@ -83,6 +83,26 @@ class Histogram1D:
 
         return new_histo
 
+    def __eq__(self, other):
+
+        if not isinstance(other, self.__class__):
+
+            raise TypeError
+
+        self._is_compatible(other)
+
+        data_equal = (self.data == other.data).all()
+        overflow_equal = (self.overflow == other.overflow).all()
+        underflow_equal = (self.underflow == other.underflow).all()
+        bins_equal = (self.bins == other.bins).all()
+        equal = data_equal * overflow_equal * underflow_equal * bins_equal
+
+        return equal
+
+    def __ne__(self, other):
+
+        return not self.__eq__(other)
+
     def _is_compatible(self, other):
 
         assert self.shape == other.shape

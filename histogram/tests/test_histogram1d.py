@@ -53,6 +53,33 @@ def test_add():
     assert new_hist.underflow.sum() == underflow_total
 
 
+def test_is_equal():
+
+    histo = _make_dummy_histo()
+    histo_2 = _make_dummy_histo()
+
+    assert histo == histo_2
+
+
+def test_is_not_equal():
+
+    histo = _make_dummy_histo()
+    histo_2 = _make_dummy_histo()
+
+    histo_2.data += 1
+
+    assert histo != histo_2
+
+
+@pytest.mark.xfail
+def test_is_equal_dummy():
+
+    histo = _make_dummy_histo()
+
+    assert histo == 2
+    assert histo != 2
+
+
 def test_save_and_load():
 
     histo = _make_dummy_histo()
@@ -64,10 +91,7 @@ def test_save_and_load():
             histo.save(f.name)
             loaded_histo = Histogram1D.load(f.name)
 
-            assert (histo.data == loaded_histo.data).all()
-            assert (histo.bins == loaded_histo.bins).all()
-            assert (histo.underflow == loaded_histo.underflow).all()
-            assert (histo.overflow == loaded_histo.overflow).all()
+            assert histo == loaded_histo
 
 
 @pytest.mark.xfail
