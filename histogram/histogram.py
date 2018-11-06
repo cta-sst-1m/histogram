@@ -105,13 +105,9 @@ class Histogram1D:
         n_samples = data_points.shape[-1]
         index = indices if isinstance(indices, int) else 0
 
-        print(data_points)
-
         histogram(data_points, self.data, self.underflow, self.overflow,
                   self.bins, index, self.n_0, self.n_1, n_samples,
                   self.n_bins)
-
-        print(self.data)
 
         return
 
