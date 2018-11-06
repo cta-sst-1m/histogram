@@ -297,8 +297,8 @@ class Histogram1D:
 
                 f.write(self.data, extname='data', compress='gzip')
                 f.write(self.bins, extname='bins', compress='gzip')
-                f.write([self.underflow, self.overflow],
-                        names=['underflow', 'overflow'], compress='gzip')
+                f.write(self.underflow, extname='underflow', compress='gzip')
+                f.write(self.overflow, extname='overflow', compress='gzip')
 
         else:
 
@@ -322,8 +322,8 @@ class Histogram1D:
 
                 data = f['data'].read()
                 bins = f['bins'].read()
-                underflow = f[2]['underflow'].read()
-                overflow = f[2]['overflow'].read()
+                underflow = f['underflow'].read()
+                overflow = f['overflow'].read()
 
             obj = Histogram1D(bin_edges=bins, data_shape=data.shape[:-1])
             obj.data = data
