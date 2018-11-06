@@ -295,8 +295,8 @@ class Histogram1D:
 
             with fitsio.FITS(path, mode='rw', clobber=True) as f:
 
-                f.write(self.data, names='data', compress='gzip')
-                f.write(self.bins, names='bins', compress='gzip')
+                f.write(self.data, extname='data', compress='gzip')
+                f.write(self.bins, extname='bins', compress='gzip')
                 f.write([self.underflow, self.overflow],
                         names=['underflow', 'overflow'], compress='gzip')
 
@@ -320,8 +320,8 @@ class Histogram1D:
 
             with fitsio.FITS(path, mode='r') as f:
 
-                data = f[0]['data'].read()
-                bins = f[1]['bins'].read()
+                data = f['data'].read()
+                bins = f['bins'].read()
                 underflow = f[2]['underflow'].read()
                 overflow = f[2]['overflow'].read()
 
