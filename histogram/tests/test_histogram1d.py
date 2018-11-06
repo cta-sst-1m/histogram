@@ -3,6 +3,8 @@ import numpy as np
 from copy import copy
 import tempfile
 import os
+import pytest
+
 
 def _make_dummy_histo():
 
@@ -55,21 +57,27 @@ def test_save_and_load():
 
     histo = _make_dummy_histo()
 
-    with tempfile.NamedTemporaryFile() as f:
+    for ext in ['.pk', '.fits']:
 
-        path, extension = os.path.splitext(f.name)
+        with tempfile.NamedTemporaryFile(suffix=ext) as f:
 
-        for ext in ['.pk', '.fits']:
-
-            filename = path + ext
-
-            histo.save(filename)
-            loaded_histo = Histogram1D.load(filename)
+            histo.save(f.name)
+            loaded_histo = Histogram1D.load(f.name)
 
             assert (histo.data == loaded_histo.data).all()
             assert (histo.bins == loaded_histo.bins).all()
             assert (histo.underflow == loaded_histo.underflow).all()
             assert (histo.overflow == loaded_histo.overflow).all()
+
+
+@pytest.mark.xfail
+def test_save_not_defined_format():
+
+    histo = _make_dummy_histo()
+
+    with tempfile.NamedTemporaryFile() as f:
+
+        histo.save(f.name)
 
 
 def test_mean_and_std():
