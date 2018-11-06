@@ -24,7 +24,7 @@ setup(
     name='histogram',
     version='0.5.0',
     packages=['histogram'],
-    url='https://github.com/calispac/histogram',
+    url='https://github.com/cta-sst-1m/histogram',
     license='GNU GPL 3.0',
     author='Cyril Alispach',
     author_email='cyril.alispach@gmail.com',
