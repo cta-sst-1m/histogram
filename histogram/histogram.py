@@ -6,6 +6,7 @@ from matplotlib.offsetbox import AnchoredText
 import matplotlib.pyplot as plt
 import pickle
 import gzip
+import fitsio
 
 
 lib = np.ctypeslib.load_library("histogram_c", os.path.dirname(__file__))
@@ -104,9 +105,13 @@ class Histogram1D:
         n_samples = data_points.shape[-1]
         index = indices if isinstance(indices, int) else 0
 
+        print(data_points)
+
         histogram(data_points, self.data, self.underflow, self.overflow,
                   self.bins, index, self.n_0, self.n_1, n_samples,
                   self.n_bins)
+
+        print(self.data)
 
         return
 
@@ -282,15 +287,56 @@ class Histogram1D:
 
     def save(self, path, **kwargs):
 
-        with gzip.open(path, 'wb', **kwargs) as handle:
+        _, extension = os.path.splitext(path)
 
-            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        if extension == '.pk':
+
+            with gzip.open(path, 'wb', **kwargs) as handle:
+
+                pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        elif extension == '.fits':
+
+            with fitsio.FITS(path, mode='wr', cobler=True) as f:
+
+                f.write(self.data, names='data')
+                f.write(self.underflow, names='underflow')
+                f.write(self.overflow, names='overflow')
+                f.write(self.bins, names='bins')
+
+        else:
+
+            raise TypeError('Cannot save file with extension : {}'.format(
+                extension))
 
     @classmethod
     def load(cls, path):
 
-        with gzip.open(path, 'rb') as handle:
+        _, extension = os.path.splitext(path)
 
-            obj = pickle.load(handle)
+        if extension == '.pk':
+
+            with gzip.open(path, 'rb') as handle:
+
+                obj = pickle.load(handle)
+
+        elif extension == '.fits':
+
+            with fitsio.FITS(path) as f:
+
+                data = f['data'].read()
+                underflow = f['underflow'].read()
+                overflow = f['overflow'].read()
+                bins = f['bins'].read()
+
+            obj = Histogram1D(bin_edges=bins, data_shape=data.shape[:-1])
+            obj.data = data
+            obj.overflow = overflow
+            obj.underflow = underflow
+
+        else:
+
+            raise TypeError('Cannot read file with extension : {}'.format(
+                extension))
 
         return obj
