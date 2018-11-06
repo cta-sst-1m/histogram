@@ -22,7 +22,7 @@ with open(REQUIREMENT_FILE) as f:
 requires = [x.strip() for x in content]
 setup(
     name='histogram',
-    version='0.3.3',
+    version='0.5.0',
     packages=['histogram'],
     url='https://github.com/calispac/histogram',
     license='GNU GPL 3.0',
