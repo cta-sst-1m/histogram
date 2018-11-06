@@ -2,11 +2,12 @@ from histogram.histogram import Histogram1D
 import numpy as np
 from copy import copy
 import tempfile
+from sys import getsizeof
 
 
 def _make_dummy_histo():
 
-    bin_edges = np.arange(30)
+    bin_edges = np.arange(1000)
     n_histo = 2
     data_shape = (n_histo,)
     histo = Histogram1D(bin_edges=bin_edges, data_shape=data_shape)
@@ -36,7 +37,7 @@ def test_add():
 
     for i in range(100):
 
-        data = np.random.normal(15, 10, size=(n_histo, 200))
+        data = np.random.normal(500, 10, size=(n_histo, 200))
         histo_1.fill(data)
         histo_2.fill(data)
 
@@ -98,7 +99,7 @@ def test_fill():
     histo = _make_dummy_histo()
     n_histo = histo.shape[0]
 
-    data = np.ones((n_histo, 2)) * 50
+    data = np.ones((n_histo, 1)) * 50
     n = 100
 
     for i in range(n):
