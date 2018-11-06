@@ -3,10 +3,12 @@
 # Installation
 
 
-``git clone https://github.com/cta-sst-1m/histogram``
-``cd histogram/``
-``pip install -r requirements.txt``
-``pip install .``
+```
+git clone https://github.com/cta-sst-1m/histogram
+cd histogram/
+pip install -r requirements.txt
+pip install .
+```
 
 ## Requirements
 
