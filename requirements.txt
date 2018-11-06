@@ -3,4 +3,4 @@ scipy
 numpy
 matplotlib
 iminuit
-fitstio
+fitsio
