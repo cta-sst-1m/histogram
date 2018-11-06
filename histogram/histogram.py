@@ -293,7 +293,7 @@ class Histogram1D:
 
         elif extension == '.fits':
 
-            with fitsio.FITS(path, mode='wr', cobler=True) as f:
+            with fitsio.FITS(path, mode='rw', cobler=True) as f:
 
                 f.write(self.data, names='data', compress='gzip')
                 f.write(self.underflow, names='underflow', compress='gzip')
