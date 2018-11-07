@@ -2,7 +2,8 @@ from histogram.histogram import Histogram1D
 import numpy as np
 from copy import copy
 import tempfile
-from sys import getsizeof
+import os
+import pytest
 
 
 def _make_dummy_histo():
@@ -52,14 +53,55 @@ def test_add():
     assert new_hist.underflow.sum() == underflow_total
 
 
+def test_is_equal():
+
+    histo = _make_dummy_histo()
+    histo_2 = _make_dummy_histo()
+
+    assert histo == histo_2
+
+
+def test_is_not_equal():
+
+    histo = _make_dummy_histo()
+    histo_2 = _make_dummy_histo()
+
+    histo_2.data += 1
+
+    assert histo != histo_2
+
+
+@pytest.mark.xfail
+def test_is_equal_dummy():
+
+    histo = _make_dummy_histo()
+
+    assert histo == 2
+    assert histo != 2
+
+
 def test_save_and_load():
+
+    histo = _make_dummy_histo()
+
+    for ext in ['.pk', '.fits']:
+
+        with tempfile.NamedTemporaryFile(suffix=ext) as f:
+
+            histo.save(f.name)
+            loaded_histo = Histogram1D.load(f.name)
+
+            assert histo == loaded_histo
+
+
+@pytest.mark.xfail
+def test_save_not_defined_format():
 
     histo = _make_dummy_histo()
 
     with tempfile.NamedTemporaryFile() as f:
 
         histo.save(f.name)
-        Histogram1D.load(f.name)
 
 
 def test_mean_and_std():
@@ -106,7 +148,6 @@ def test_fill():
 
         histo.fill(data)
 
-    print(histo.data.sum())
     assert (histo.data[:, 50] == n).all()
     assert (histo.data[:, 50 + 1] == 0).all()
     assert (histo.data[:, 50 - 1] == 0).all()

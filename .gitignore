@@ -1,6 +1,9 @@
 build/
 __pycache__
 .idea/*
+.cache/
+.pytest_cache/
+.benchmarks/
 dist/
 histogram.egg-info/
 histogram/histogram_c.so

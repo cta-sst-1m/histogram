@@ -6,6 +6,7 @@ from matplotlib.offsetbox import AnchoredText
 import matplotlib.pyplot as plt
 import pickle
 import gzip
+import fitsio
 
 
 lib = np.ctypeslib.load_library("histogram_c", os.path.dirname(__file__))
@@ -81,6 +82,26 @@ class Histogram1D:
         new_histo.underflow += self.underflow + other.underflow
 
         return new_histo
+
+    def __eq__(self, other):
+
+        if not isinstance(other, self.__class__):
+
+            raise TypeError
+
+        self._is_compatible(other)
+
+        data_equal = (self.data == other.data).all()
+        overflow_equal = (self.overflow == other.overflow).all()
+        underflow_equal = (self.underflow == other.underflow).all()
+        bins_equal = (self.bins == other.bins).all()
+        equal = data_equal * overflow_equal * underflow_equal * bins_equal
+
+        return equal
+
+    def __ne__(self, other):
+
+        return not self.__eq__(other)
 
     def _is_compatible(self, other):
 
@@ -223,17 +244,16 @@ class Histogram1D:
                ' std : {:.4f}\n' \
                ' mode : {:.1f}\n' \
                ' max : {:.2f}\n' \
-               ' min : {:.2f}\n'.format(np.sum(self.data[index]),
-                         np.sum(self.underflow[index]),
-                         np.sum(self.overflow[index]),
-                         self.mean(index=index),
-                         self.std(index=index),
-                         self.mode(index=index),
-                         self.max(index=index),
-                         self.min(index=index),
-                         )
-
-        print(text)
+               ' min : {:.2f}'.format(
+                        np.sum(self.data[index]),
+                        np.sum(self.underflow[index]),
+                        np.sum(self.overflow[index]),
+                        self.mean(index=index),
+                        self.std(index=index),
+                        self.mode(index=index),
+                        self.max(index=index),
+                        self.min(index=index),
+                        )
 
         return text
 
@@ -282,15 +302,56 @@ class Histogram1D:
 
     def save(self, path, **kwargs):
 
-        with gzip.open(path, 'wb', **kwargs) as handle:
+        _, extension = os.path.splitext(path)
 
-            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        if extension == '.pk':
+
+            with gzip.open(path, 'wb', **kwargs) as handle:
+
+                pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        elif extension == '.fits':
+
+            with fitsio.FITS(path, mode='rw', clobber=True) as f:
+
+                f.write(self.data, extname='data', compress='gzip')
+                f.write(self.bins, extname='bins', compress='gzip')
+                f.write(self.underflow, extname='underflow', compress='gzip')
+                f.write(self.overflow, extname='overflow', compress='gzip')
+
+        else:
+
+            raise TypeError('Cannot save file with extension : {}'.format(
+                extension))
 
     @classmethod
     def load(cls, path):
 
-        with gzip.open(path, 'rb') as handle:
+        _, extension = os.path.splitext(path)
 
-            obj = pickle.load(handle)
+        if extension == '.pk':
+
+            with gzip.open(path, 'rb') as handle:
+
+                obj = pickle.load(handle)
+
+        elif extension == '.fits':
+
+            with fitsio.FITS(path, mode='r') as f:
+
+                data = f['data'].read()
+                bins = f['bins'].read()
+                underflow = f['underflow'].read()
+                overflow = f['overflow'].read()
+
+            obj = Histogram1D(bin_edges=bins, data_shape=data.shape[:-1])
+            obj.data = data
+            obj.overflow = overflow
+            obj.underflow = underflow
+
+        else:
+
+            raise TypeError('Cannot read file with extension : {}'.format(
+                extension))
 
         return obj

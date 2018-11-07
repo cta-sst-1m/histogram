@@ -1,5 +1,6 @@
 Cython
-scipy
-numpy
-matplotlib
+fitsio
 iminuit
+matplotlib
+numpy
+scipy
