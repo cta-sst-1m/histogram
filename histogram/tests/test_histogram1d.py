@@ -132,7 +132,7 @@ def test_load_slice():
             loaded_histo = Histogram1D.load(f.name, rows=0)
             assert histo[0] == loaded_histo
             assert histo[1] != loaded_histo
-            loaded_histo = Histogram1D.load(f.name, rows=(0, ))
+            loaded_histo = Histogram1D.load(f.name, rows=(0,))
             assert histo[0] == loaded_histo
             assert histo[1] != loaded_histo
 
@@ -140,7 +140,7 @@ def test_load_slice():
             assert histo[1] == loaded_histo
             assert histo[0] != loaded_histo
 
-            loaded_histo = Histogram1D.load(f.name, rows=(1, ))
+            loaded_histo = Histogram1D.load(f.name, rows=(1,))
             assert histo[1] == loaded_histo
             assert histo[0] != loaded_histo
 

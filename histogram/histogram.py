@@ -331,7 +331,7 @@ class Histogram1D:
 
         if isinstance(rows, int):
 
-            rows = (slice(rows, rows+1, 1), )
+            rows = (slice(rows, rows + 1, 1),)
 
         elif isinstance(rows, tuple):
 
@@ -358,7 +358,7 @@ class Histogram1D:
 
                 if rows is not None:
 
-                    rows_table = rows + (slice(0, -1, 1), )
+                    rows_table = rows + (slice(0, -1, 1),)
                     data = f['data'][rows_table]
                     underflow = f['underflow'][rows]
                     overflow = f['overflow'][rows]
