@@ -22,7 +22,7 @@ with open(REQUIREMENT_FILE) as f:
 requires = [x.strip() for x in content]
 setup(
     name='histogram',
-    version='0.5.0',
+    version='0.6.0',
     packages=['histogram'],
     url='https://github.com/cta-sst-1m/histogram',
     license='GNU GPL 3.0',
