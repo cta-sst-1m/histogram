@@ -164,6 +164,16 @@ def test_load_slice_2D_1dhisto():
             assert histo[1, 1] == loaded_histo
             assert histo[0, 1] != loaded_histo
 
+            loaded_histo = Histogram1D.load(f.name, rows=(1, ))
+
+            assert histo[1] == loaded_histo
+            assert histo[0] != loaded_histo
+
+            loaded_histo = Histogram1D.load(f.name, rows=(0,))
+
+            assert histo[0] == loaded_histo
+            assert histo[1] != loaded_histo
+
 
 @pytest.mark.xfail
 def test_save_not_defined_format():

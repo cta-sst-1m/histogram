@@ -356,17 +356,33 @@ class Histogram1D:
 
             with fitsio.FITS(path, mode='r') as f:
 
+                data = f['data']
+                underflow = f['underflow']
+                overflow = f['overflow']
+
                 if rows is not None:
 
-                    rows_table = rows + (slice(0, -1, 1),)
-                    data = f['data'][rows_table]
-                    underflow = f['underflow'][rows]
-                    overflow = f['overflow'][rows]
+                    dims_data = data._info['dims']
+                    dims_flow = overflow._info['dims']
+                    rows_data = rows
+
+                    for _ in range(len(dims_data) - len(rows)):
+
+                        rows_data += (slice(0, -1, 1),)
+
+                    for _ in range(len(dims_flow) - len(rows)):
+
+                        rows += (slice(0, -1, 1),)
+
+                    data = data[rows_data]
+                    underflow = underflow[rows]
+                    overflow = overflow[rows]
+
                 else:
 
-                    data = f['data'].read()
-                    underflow = f['underflow'].read()
-                    overflow = f['overflow'].read()
+                    data = data.read()
+                    underflow = underflow.read()
+                    overflow = overflow.read()
 
                 bins = f['bins'].read()
                 data = np.squeeze(data)
