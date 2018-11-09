@@ -325,9 +325,26 @@ class Histogram1D:
                 extension))
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path, rows=None):
 
         _, extension = os.path.splitext(path)
+
+        if isinstance(rows, int):
+
+            rows = (slice(rows, rows + 1, 1),)
+
+        elif isinstance(rows, tuple):
+
+            new_rows = ()
+            for i in rows:
+
+                new_rows += (slice(i, i + 1, 1), )
+
+            rows = new_rows
+
+        elif rows is not None:
+
+            raise ValueError('Unsupported value for row : {}'.format(rows))
 
         if extension == '.pk':
 
@@ -339,10 +356,39 @@ class Histogram1D:
 
             with fitsio.FITS(path, mode='r') as f:
 
-                data = f['data'].read()
+                data = f['data']
+                underflow = f['underflow']
+                overflow = f['overflow']
+
+                if rows is not None:
+
+                    dims_data = data._info['dims']
+                    dims_flow = overflow._info['dims']
+                    rows_data = rows
+
+                    for _ in range(len(dims_data) - len(rows)):
+
+                        rows_data += (slice(0, -1, 1),)
+
+                    for _ in range(len(dims_flow) - len(rows)):
+
+                        rows += (slice(0, -1, 1),)
+
+                    data = data[rows_data]
+                    underflow = underflow[rows]
+                    overflow = overflow[rows]
+
+                else:
+
+                    data = data.read()
+                    underflow = underflow.read()
+                    overflow = overflow.read()
+
                 bins = f['bins'].read()
-                underflow = f['underflow'].read()
-                overflow = f['overflow'].read()
+                data = np.squeeze(data)
+                bins = np.squeeze(bins)
+                underflow = np.squeeze(underflow)
+                overflow = np.squeeze(overflow)
 
             obj = Histogram1D(bin_edges=bins, data_shape=data.shape[:-1])
             obj.data = data

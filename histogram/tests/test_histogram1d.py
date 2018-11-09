@@ -2,7 +2,6 @@ from histogram.histogram import Histogram1D
 import numpy as np
 from copy import copy
 import tempfile
-import os
 import pytest
 
 
@@ -10,7 +9,19 @@ def _make_dummy_histo():
 
     bin_edges = np.arange(1000)
     n_histo = 2
-    data_shape = (n_histo,)
+    data_shape = (n_histo, )
+    histo = Histogram1D(bin_edges=bin_edges, data_shape=data_shape)
+
+    assert histo.shape == data_shape + (len(bin_edges) - 1, )
+
+    return histo
+
+
+def _make_dummy_2D_1dhisto():
+
+    bin_edges = np.arange(1000)
+    n_histo = 2
+    data_shape = (n_histo, n_histo)
     histo = Histogram1D(bin_edges=bin_edges, data_shape=data_shape)
 
     assert histo.shape == data_shape + (len(bin_edges) - 1, )
@@ -92,6 +103,76 @@ def test_save_and_load():
             loaded_histo = Histogram1D.load(f.name)
 
             assert histo == loaded_histo
+
+
+def test_save_and_load_2D_1dhisto():
+
+    histo = _make_dummy_2D_1dhisto()
+
+    for ext in ['.pk', '.fits']:
+
+        with tempfile.NamedTemporaryFile(suffix=ext) as f:
+
+            histo.save(f.name)
+            loaded_histo = Histogram1D.load(f.name)
+
+            assert histo == loaded_histo
+
+
+def test_load_slice():
+
+    histo = _make_dummy_histo()
+    histo[0].data += 1
+
+    for ext in ['.fits']:
+
+        with tempfile.NamedTemporaryFile(suffix=ext) as f:
+
+            histo.save(f.name)
+            loaded_histo = Histogram1D.load(f.name, rows=0)
+            assert histo[0] == loaded_histo
+            assert histo[1] != loaded_histo
+            loaded_histo = Histogram1D.load(f.name, rows=(0,))
+            assert histo[0] == loaded_histo
+            assert histo[1] != loaded_histo
+
+            loaded_histo = Histogram1D.load(f.name, rows=1)
+            assert histo[1] == loaded_histo
+            assert histo[0] != loaded_histo
+
+            loaded_histo = Histogram1D.load(f.name, rows=(1,))
+            assert histo[1] == loaded_histo
+            assert histo[0] != loaded_histo
+
+
+def test_load_slice_2D_1dhisto():
+
+    histo = _make_dummy_2D_1dhisto()
+    histo[0, 0].data += 1
+    histo[1, 1].data += 2
+
+    for ext in ['.fits']:
+
+        with tempfile.NamedTemporaryFile(suffix=ext) as f:
+
+            histo.save(f.name)
+            loaded_histo = Histogram1D.load(f.name, rows=(0, 0))
+            assert histo[0, 0] == loaded_histo
+            assert histo[1, 1] != loaded_histo
+
+            loaded_histo = Histogram1D.load(f.name, rows=(1, 1))
+            assert histo[1, 1] == loaded_histo
+            assert histo[0, 1] != loaded_histo
+
+            loaded_histo = Histogram1D.load(f.name, rows=(1, ))
+
+            assert histo[1] == loaded_histo
+            assert histo[0] != loaded_histo
+
+            loaded_histo = Histogram1D.load(f.name, rows=(0,))
+
+            assert histo[0] == loaded_histo
+            assert histo[1] != loaded_histo
 
 
 @pytest.mark.xfail
@@ -206,3 +287,4 @@ if __name__ == '__main__':
 
     test_fill()
     test_fill_indices()
+    test_load_slice()
