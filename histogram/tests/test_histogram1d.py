@@ -301,6 +301,11 @@ def test_combine():
     assert sum_histo == histo.combine(axis=0)
 
 
+def test_simple_import():
+
+    from histogram import Histogram1D
+
+
 if __name__ == '__main__':
 
     test_fill()
