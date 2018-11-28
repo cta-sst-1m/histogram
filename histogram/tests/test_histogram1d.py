@@ -260,6 +260,17 @@ def test_underflow():
     assert histo.underflow.sum() == (n * n_histo)
 
 
+def test_min_max():
+
+    histo = _make_dummy_histo()
+
+    data = np.arange(histo.shape[0]*10).reshape(histo.shape[0], 10)
+    histo.fill(data)
+
+    assert (histo.min() == data.min(axis=-1)).all()
+    assert (histo.min() == data.min(axis=-1)).all()
+
+
 def test_fill_indices():
 
     bin_edges = np.arange(10)
