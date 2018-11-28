@@ -294,6 +294,13 @@ def test_memory_allocation():
     pass
 
 
+def test_combine():
+
+    histo = _make_dummy_histo()
+    sum_histo = histo[0] + histo[1]
+    assert sum_histo == histo.combine(axis=0)
+
+
 if __name__ == '__main__':
 
     test_fill()
