@@ -268,7 +268,6 @@ def test_min_max():
     histo.fill(data)
 
     assert (histo.min() == data.min(axis=-1)).all()
-    print(histo.max())
     assert (histo.max() == data.max(axis=-1)).all()
 
 
