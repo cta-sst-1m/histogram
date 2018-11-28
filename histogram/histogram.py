@@ -105,7 +105,11 @@ class Histogram1D:
 
     def _is_compatible(self, other):
 
-        assert self.shape == other.shape
+        if self.shape != other.shape:
+
+            raise ValueError('Cannot join histograms os shape {} and {}'
+                             ''.format(self.shape, other.shape))
+
         assert (self.bins == other.bins).all()
 
     def fill(self, data_points, indices=()):
@@ -204,9 +208,10 @@ class Histogram1D:
 
         else:
 
-            data = np.ma.masked_array(self.data, mask=(self.data <= 0))
-            min = np.argmin(data, axis=-1)
-            min = self.bin_centers[min]
+            bins = np.ones(self.shape)
+            bins = bins * self.bins[:-1]
+            bins = np.ma.masked_array(bins, mask=(self.data <= 0))
+            min = np.min(bins, axis=-1)
 
             return min[index]
 
@@ -218,10 +223,25 @@ class Histogram1D:
 
         else:
 
-            max = np.argmax(self.data, axis=-1)
-            max = self.bin_centers[max]
+            bins = np.ones(self.shape)
+            bins = bins * self.bins[:-1]
+            bins = np.ma.masked_array(bins, mask=(self.data <= 0))
+            max = np.max(bins, axis=-1)
 
         return max[index]
+
+    def combine(self, axis=0):
+
+        data = self.data.sum(axis=axis)
+        overflow = self.overflow.sum(axis=axis)
+        underflow = self.underflow.sum(axis=axis)
+
+        histo = Histogram1D(bin_edges=self.bins, data_shape=data.shape[:-1])
+        histo.data = data
+        histo.overflow = overflow
+        histo.underflow = underflow
+
+        return histo
 
     def is_empty(self):
 
