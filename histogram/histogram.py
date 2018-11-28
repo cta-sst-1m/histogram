@@ -204,9 +204,10 @@ class Histogram1D:
 
         else:
 
-            data = np.ma.masked_array(self.data, mask=(self.data <= 0))
-            min = np.argmin(data, axis=-1)
-            min = self.bin_centers[min]
+            bins = np.ones(self.shape)
+            bins = bins * self.bins[:-1]
+            bins = np.ma.masked_array(bins, mask=(self.data <= 0))
+            min = np.min(bins, axis=-1)
 
             return min[index]
 
@@ -218,8 +219,10 @@ class Histogram1D:
 
         else:
 
-            max = np.argmax(self.data, axis=-1)
-            max = self.bin_centers[max]
+            bins = np.ones(self.shape)
+            bins = bins * self.bins[:-1]
+            bins = np.ma.masked_array(bins, mask=(self.data <= 0))
+            max = np.max(bins, axis=-1)
 
         return max[index]
 
