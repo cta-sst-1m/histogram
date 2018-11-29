@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pickle
 import gzip
 import fitsio
+import humanize
 
 
 lib = np.ctypeslib.load_library("histogram_c", os.path.dirname(__file__))
@@ -343,6 +344,12 @@ class Histogram1D:
 
             raise TypeError('Cannot save file with extension : {}'.format(
                 extension))
+
+        file_size = os.path.getsize(path)
+        file_size = humanize.naturalsize(file_size, binary=True)
+
+        print('Histogram successfully saved to \n{}\nSize : {}'
+              ''.format(path, file_size))
 
     @classmethod
     def load(cls, path, rows=None):
