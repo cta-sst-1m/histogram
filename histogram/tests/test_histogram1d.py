@@ -338,6 +338,17 @@ def test_save_figures_histo():
         histo.save_figures(f.name)
         assert os.path.exists(f.name)
 
+    histo2d = _make_dummy_2D_1dhisto()
+
+    for i in range(100):
+        data = np.random.normal(500, 10, size=(2, 2, 200))
+        histo2d.fill(data)
+
+    with tempfile.NamedTemporaryFile(suffix='.pdf') as f:
+
+        histo2d.save_figures(f.name)
+        assert os.path.exists(f.name)
+
 
 if __name__ == '__main__':
 
@@ -345,9 +356,10 @@ if __name__ == '__main__':
     test_fill_indices()
     test_load_slice()
 
-    histo = _make_dummy_histo()
-    for i in range(100):
-        data = np.random.normal(500, 10, size=(2, 200))
-        histo.fill(data)
+    histo2d = _make_dummy_2D_1dhisto()
 
-    histo.save_figures('test.pdf')
+    for i in range(100):
+        data = np.random.normal(500, 10, size=(2, 2, 200))
+        histo2d.fill(data)
+
+    histo2d.save_figures('test.pdf')

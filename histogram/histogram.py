@@ -365,7 +365,8 @@ class Histogram1D:
 
         for index in np.ndindex(self.shape[:-1]):
 
-            self.draw(index=index, axis=axis, **kwargs)
+            self.draw(index=index, axis=axis, label='{}'.format(index),
+                      **kwargs)
             fig.savefig(pdf, format='pdf')
             axis.clear()
         pdf.close()
