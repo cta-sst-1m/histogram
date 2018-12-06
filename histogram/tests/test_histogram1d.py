@@ -3,6 +3,7 @@ import numpy as np
 from copy import copy
 import tempfile
 import pytest
+import os
 
 
 def _make_dummy_histo():
@@ -306,8 +307,47 @@ def test_simple_import():
     from histogram import Histogram1D
 
 
+def test_write_info_empty_histo():
+
+    histo = _make_dummy_histo()
+    assert histo[0].is_empty()
+    histo._write_info(index=0)
+
+
+def test_save_figures_empty_histo():
+
+    histo = _make_dummy_histo()
+    assert histo.is_empty()
+
+    with tempfile.NamedTemporaryFile(suffix='.pdf') as f:
+
+        histo.save_figures(f.name)
+        assert os.path.exists(f.name)
+
+
+def test_save_figures_histo():
+
+    histo = _make_dummy_histo()
+
+    for i in range(100):
+        data = np.random.normal(500, 10, size=(2, 200))
+        histo.fill(data)
+
+    with tempfile.NamedTemporaryFile(suffix='.pdf') as f:
+
+        histo.save_figures(f.name)
+        assert os.path.exists(f.name)
+
+
 if __name__ == '__main__':
 
     test_fill()
     test_fill_indices()
     test_load_slice()
+
+    histo = _make_dummy_histo()
+    for i in range(100):
+        data = np.random.normal(500, 10, size=(2, 200))
+        histo.fill(data)
+
+    histo.save_figures('test.pdf')

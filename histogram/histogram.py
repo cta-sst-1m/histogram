@@ -3,6 +3,7 @@ import ctypes
 from numpy.ctypeslib import ndpointer
 import os
 from matplotlib.offsetbox import AnchoredText
+from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import pickle
 import gzip
@@ -196,16 +197,20 @@ class Histogram1D:
 
         if self.is_empty():
 
-            return np.zeros(self.shape) * np.nan
+            mode = np.zeros(self.shape[:-1]) * np.nan
+            mode = mode[index]
 
-        mode = self.bins[np.argmax(self.data[index], axis=-1)]
+        else:
+
+            mode = self.bins[np.argmax(self.data[index], axis=-1)]
+
         return mode
 
     def min(self, index=[...]):
 
         if self.is_empty():
 
-            return np.ones(self.shape) * np.nan
+            min = np.ones(self.shape[:-1]) * np.nan
 
         else:
 
@@ -214,13 +219,13 @@ class Histogram1D:
             bins = np.ma.masked_array(bins, mask=(self.data <= 0))
             min = np.min(bins, axis=-1)
 
-            return min[index]
+        return min[index]
 
     def max(self, index=[...]):
 
         if self.is_empty():
 
-            return np.ones(self.shape) * np.nan
+            max = np.ones(self.shape[:-1]) * np.nan
 
         else:
 
@@ -350,6 +355,20 @@ class Histogram1D:
 
         print('Histogram successfully saved to \n{}\nSize : {}'
               ''.format(path, file_size))
+
+    def save_figures(self, figure_name, **kwargs):
+
+        pdf = PdfPages(figure_name)
+
+        fig = plt.figure()
+        axis = fig.add_subplot(111)
+
+        for index in np.ndindex(self.shape[:-1]):
+
+            self.draw(index=index, axis=axis, **kwargs)
+            fig.savefig(pdf, format='pdf')
+            axis.clear()
+        pdf.close()
 
     @classmethod
     def load(cls, path, rows=None):
