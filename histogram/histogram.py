@@ -60,15 +60,14 @@ class Histogram1D:
 
     def __getitem__(self, item):
 
-        if isinstance(item, int):
+        item, data_shape = _convert_item(item, self.shape)
 
-            item = (item, )
-
-        data_shape = self.shape[len(item):-1]
         histogram = Histogram1D(bin_edges=self.bins, data_shape=data_shape)
-        histogram.data = self.data[item]
-        histogram.underflow = self.underflow[item]
-        histogram.overflow = self.overflow[item]
+        histogram.data = np.squeeze(self.data[item])
+        histogram.underflow = np.squeeze(self.underflow[item[:-1]])
+        histogram.overflow = np.squeeze(self.overflow[item[:-1]])
+
+        print(item, self.data.shape, histogram.data.shape)
 
         return histogram
 
@@ -78,10 +77,9 @@ class Histogram1D:
 
         new_histo = Histogram1D(bin_edges=self.bins,
                                 data_shape=self.shape[:-1])
-
-        new_histo.data += self.data + other.data
-        new_histo.overflow += self.overflow + other.overflow
-        new_histo.underflow += self.underflow + other.underflow
+        new_histo.data = self.data + other.data
+        new_histo.overflow = self.overflow + other.overflow
+        new_histo.underflow = self.underflow + other.underflow
 
         return new_histo
 
@@ -109,7 +107,7 @@ class Histogram1D:
 
         if self.shape != other.shape:
 
-            raise ValueError('Cannot join histograms os shape {} and {}'
+            raise ValueError('Cannot join histograms of shape {} and {}'
                              ''.format(self.shape, other.shape))
 
         assert (self.bins == other.bins).all()
@@ -376,24 +374,6 @@ class Histogram1D:
 
         _, extension = os.path.splitext(path)
 
-        if isinstance(rows, int):
-
-            rows = (slice(rows, rows + 1, 1),)
-
-        elif isinstance(rows, tuple):
-
-            new_rows = ()
-            for i in rows:
-
-                new_rows += (slice(i, i + 1, 1), )
-
-            rows = new_rows
-
-        elif rows is not None:
-
-            raise TypeError('Unsupported type for "rows" : {}'
-                            ''.format(type(rows)))
-
         if extension == '.pk':
 
             with gzip.open(path, 'rb') as handle:
@@ -410,21 +390,12 @@ class Histogram1D:
 
                 if rows is not None:
 
-                    dims_data = data._info['dims']
-                    dims_flow = overflow._info['dims']
-                    rows_data = rows
+                    dims_data = tuple(data._info['dims'])
+                    rows, _ = _convert_item(rows, dims_data)
 
-                    for _ in range(len(dims_data) - len(rows)):
-
-                        rows_data += (slice(0, -1, 1),)
-
-                    for _ in range(len(dims_flow) - len(rows)):
-
-                        rows += (slice(0, -1, 1),)
-
-                    data = data[rows_data]
-                    underflow = underflow[rows]
-                    overflow = overflow[rows]
+                    data = data[rows]
+                    underflow = underflow[rows[:-1]]
+                    overflow = overflow[rows[:-1]]
 
                 else:
 
@@ -449,3 +420,39 @@ class Histogram1D:
                 extension))
 
         return obj
+
+
+def _convert_item(item, shape):
+
+    indices = ()
+    data_shape = ()
+
+    if isinstance(item, int):
+        item = (slice(item, item + 1, 1),)
+
+    for i in range(len(shape)):
+
+        if i < len(item):
+
+            if isinstance(item[i], int):
+
+                indices += (slice(item[i], item[i] + 1, 1),)
+            elif isinstance(item[i], slice):
+                if item[i].start is None and item[i].stop is None:
+
+                    indices += (slice(None, None, None), )
+                    data_shape += (shape[i],)
+                else:
+                    indices += (item[i],)
+
+            elif item[i] is None:
+
+                indices += (slice(None, None, None), )
+                data_shape += (shape[i], )
+
+        else:
+            indices += (slice(None, None, None),)
+            data_shape += (shape[i],)
+    item = indices
+
+    return item, data_shape[:-1]
