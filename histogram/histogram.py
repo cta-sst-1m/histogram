@@ -371,7 +371,8 @@ class Histogram1D:
 
         elif rows is not None:
 
-            raise ValueError('Unsupported value for row : {}'.format(rows))
+            raise TypeError('Unsupported type for "rows" : {}'
+                            ''.format(type(rows)))
 
         if extension == '.pk':
 
