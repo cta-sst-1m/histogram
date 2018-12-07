@@ -67,8 +67,6 @@ class Histogram1D:
         histogram.underflow = np.squeeze(self.underflow[item[:-1]])
         histogram.overflow = np.squeeze(self.overflow[item[:-1]])
 
-        print(item, self.data.shape, histogram.data.shape)
-
         return histogram
 
     def __add__(self, other):
