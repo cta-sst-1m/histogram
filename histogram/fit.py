@@ -24,13 +24,13 @@ class HistogramFitter(metaclass=ABCMeta):
         """
 
         self.histogram = histogram
+        self.mask = histogram.data > 0
         self.parameters_name = describe(self.pdf)[1:]
         self.iminuit_options = {'pedantic': pedantic,
                                 'print_level': print_level,
                                 'forced_parameters': self.parameters_name,
                                 **kwargs}
         self.cost = cost
-        self.ndf = np.nan
 
         self.initial_parameters = initial_parameters
         self.boundary_parameter = {}
@@ -43,6 +43,8 @@ class HistogramFitter(metaclass=ABCMeta):
         self.bin_centers = out[0]
         self.count = out[1]
         self.bin_width = out[2]
+
+        self.ndf = self.compute_ndf()
 
     @abstractmethod
     def pdf(self, x, *params):
@@ -71,8 +73,7 @@ class HistogramFitter(metaclass=ABCMeta):
         x = self.histogram.bin_centers
         y = self.histogram.data
         bin_width = np.diff(self.histogram.bins)
-
-        mask = y > 0
+        mask = self.mask
 
         return x[mask], y[mask], bin_width[mask]
 
@@ -92,9 +93,6 @@ class HistogramFitter(metaclass=ABCMeta):
         fitter = Minuit(self.cost_function, **options)
         fitter.migrad(**kwargs)
 
-        self.ndf = len(fitter.list_of_vary_param())
-        self.ndf = len(self.count) - self.ndf
-
         self.parameters = fitter.values
         self.errors = fitter.errors
 
@@ -106,7 +104,15 @@ class HistogramFitter(metaclass=ABCMeta):
 
             pass
 
+        self.fitter = fitter
+
         return
+
+    def compute_ndf(self):
+
+        ndf = len(self.count[self.count > 0]) - len(self.parameters.keys())
+
+        return ndf
 
     def cost_function(self, *params):
 
@@ -142,51 +148,55 @@ class HistogramFitter(metaclass=ABCMeta):
 
     def _neymans_chi_square(self, y, count):
 
+        mask = np.isfinite(y)
         cost = (y - count)**2
         cost = cost / np.maximum(count, 1)
-        cost = np.sum(cost, axis=-1)
+        cost = cost[mask]
 
-        return cost
+        return cost.sum()
 
     def _pearsons_chi_square(self, y, count):
 
+        mask = np.isfinite(y) * (y > 0)
         cost = (y - count)**2 / y
-        cost = np.sum(cost, axis=-1)
-
-        return cost
+        cost = cost[mask]
+        return cost.sum()
 
     def _mighells_chi_square(self, y, count):
 
+        mask = np.isfinite(y)
         cost = count + np.minimum(count, 1) + y
         cost = cost**2
         cost = cost / (count + 1)
-        cost = np.sum(cost, axis=-1)
+        cost = cost[mask]
 
-        return cost
+        return cost.sum()
 
     def _maximum_likelihood_estimator(self, y, log_y, count):
 
         cost = y - count * log_y
-        cost = np.sum(cost, axis=-1)
+        # mask = np.isfinite(y) * np.isfinite(log_y) * (count > 0)
+        mask = count > 0
+        cost[~mask] = y[~mask]
 
-        return 2 * cost
+        return 2 * cost.sum()
 
     def _gauss_maximum_likelihood_estimator(self, y, log_y, count):
 
         cost = self._pearsons_chi_square(y, count)
-        cost = cost + np.sum(log_y, axis=-1)
+        log_y = log_y[np.isfinite(log_y)]
 
-        return cost
+        return cost + log_y.sum()
 
-    def fit_test(self, **params):
+    def fit_test(self, index=(), **params):
 
         if not params:
 
             params = self.parameters
 
-        y = self.pdf(self.bin_centers, **params)
+        y = self.pdf(self.bin_centers, **params)[index]
         y = y * self.bin_width
-        chi2 = self._pearsons_chi_square(y, self.count)
+        chi2 = self._pearsons_chi_square(y, self.count[index])
 
         return chi2 / self.ndf
 
@@ -199,7 +209,7 @@ class HistogramFitter(metaclass=ABCMeta):
         self.draw(index=index, x_label=x_label, axes=axes, **kwargs)
 
         label_fit = r'Fit : $\frac{\chi^2}{ndf}$' + ' : {:.2f}\n'.format(
-            self.fit_test())
+            self.fit_test(index=index))
         line = '{} : {:.2f} $\pm$ {:.3f}\n'
         line_minos = '{name} : ' \
                      '${{{val:.2f}}}^{{+{upper:.3f}}}_{{{lower:.3f}}}$\n'
@@ -212,7 +222,6 @@ class HistogramFitter(metaclass=ABCMeta):
 
                 if self.parameters_plot_name[key] is None:
                     continue
-
             else:
 
                 name = key
@@ -228,24 +237,33 @@ class HistogramFitter(metaclass=ABCMeta):
 
                 label_fit += line.format(name, val, self.errors[key])
 
-        x_fit = self.bin_centers
+        count = self.count[index]
+        mask = count > 0
+        x_fit = self.bin_centers[mask]
         x_fit = np.linspace(x_fit.min(), x_fit.max(), num=len(x_fit) * 10)
-        y_fit = self.pdf(x_fit, **self.parameters)
+        y_fit = self.pdf(x_fit, **self.parameters)[index]
         axes.plot(x_fit, y_fit, color='r', label=label_fit)
         axes.set_ylabel('count')
 
         y_fit = self.pdf(self.bin_centers, **self.parameters) * self.bin_width
-        y_residual = (self.count - y_fit) / np.sqrt(self.count)
-        axes_residual.errorbar(self.bin_centers, y_residual,
+        y_fit = y_fit[index]
+        y_residual = (count - y_fit) / np.sqrt(count)
+        axes_residual.errorbar(self.bin_centers[mask], y_residual[mask],
                                marker='.', ls='None', color='k')
         axes_residual.set_xlabel(x_label)
         axes_residual.set_ylabel('pull')
 
-        mean_residual = np.mean(y_residual)
+        mean_residual = np.mean(y_residual[mask])
         label_residual = 'Mean pull : {:.2f}'.format(mean_residual)
         axes_residual.axhline(mean_residual, color='k', linestyle='--',
                               label=label_residual)
         axes_residual.legend(loc='best')
+        axes.set_xlim(self.histogram.min(), self.histogram.max())
+
+        if 'log' in kwargs and kwargs['log']:
+
+            axes.set_ylim(1, None)
+
         axes.legend(loc='best')
 
         return fig
@@ -278,14 +296,17 @@ class HistogramFitter(metaclass=ABCMeta):
 
             label_fit += line.format(name, val, self.errors[key])
 
+        count = self.count[index]
         x_fit = self.bin_centers
         x_fit = np.linspace(x_fit.min(), x_fit.max(), num=len(x_fit) * 10)
         y_fit = self.pdf(x_fit, **self.initial_parameters)
+        y_fit = y_fit[index]
         axes.plot(x_fit, y_fit, color='g', label=label_fit)
         axes.set_ylabel('count')
 
         y_fit = self.pdf(self.bin_centers, **self.parameters) * self.bin_width
-        y_residual = (self.count - y_fit) / np.sqrt(self.count)
+        y_fit = y_fit[index]
+        y_residual = (count - y_fit) / np.sqrt(count)
         axes_residual.errorbar(self.bin_centers, y_residual,
                                marker='.', ls='None', color='k')
         axes_residual.set_xlabel(x_label)
@@ -315,3 +336,18 @@ class HistogramFitter(metaclass=ABCMeta):
         axes.set_xlim(self.bin_centers.min(), self.bin_centers.max())
 
         return axes
+
+    def results_to_dict(self):
+
+        data = {}
+
+        for key, val in self.fitter.fitarg.items():
+
+            if not ('limit_' in key or 'fix_' in key):
+
+                data[key] = np.array(val)
+
+        data['chi_2'] = np.array(self.fit_test() * self.ndf)
+        data['ndf'] = np.array(self.ndf)
+
+        return data
