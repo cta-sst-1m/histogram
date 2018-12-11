@@ -200,7 +200,7 @@ class HistogramFitter(metaclass=ABCMeta):
 
         return chi2 / self.ndf
 
-    def draw_fit(self, index=(), x_label='', **kwargs):
+    def draw_fit(self, index=(), x_label='', residual=False, **kwargs):
 
         fig = plt.figure()
         axes = fig.add_axes([0.1, 0.3, 0.8, 0.6])
@@ -247,14 +247,22 @@ class HistogramFitter(metaclass=ABCMeta):
 
         y_fit = self.pdf(self.bin_centers, **self.parameters) * self.bin_width
         y_fit = y_fit[index]
-        y_residual = (count - y_fit) / np.sqrt(count)
+
+        if residual:
+            y_residual = (count - y_fit) / np.sqrt(count)
+            axes_residual.set_ylabel('pull')
+
+        else:
+
+            y_residual = (count - y_fit) / y_fit
+            axes_residual.set_ylabel('residual')
+
         axes_residual.errorbar(self.bin_centers[mask], y_residual[mask],
                                marker='.', ls='None', color='k')
         axes_residual.set_xlabel(x_label)
-        axes_residual.set_ylabel('pull')
 
         mean_residual = np.mean(y_residual[mask])
-        label_residual = 'Mean pull : {:.2f}'.format(mean_residual)
+        label_residual = 'Mean : {:.2f}'.format(mean_residual)
         axes_residual.axhline(mean_residual, color='k', linestyle='--',
                               label=label_residual)
         axes_residual.legend(loc='best')
