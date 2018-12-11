@@ -258,7 +258,11 @@ class HistogramFitter(metaclass=ABCMeta):
         axes_residual.axhline(mean_residual, color='k', linestyle='--',
                               label=label_residual)
         axes_residual.legend(loc='best')
-        axes.set_xlim(self.histogram.min(), self.histogram.max())
+
+        mask = y_fit > 0
+        x_min = max(self.histogram.min(), self.bin_centers[mask].min())
+        x_max = min(self.histogram.max(), self.bin_centers[mask].max())
+        axes.set_xlim(x_min, x_max)
 
         if 'log' in kwargs and kwargs['log']:
 
