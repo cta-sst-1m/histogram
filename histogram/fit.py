@@ -208,8 +208,10 @@ class HistogramFitter(metaclass=ABCMeta):
 
         self.draw(index=index, x_label=x_label, axes=axes, **kwargs)
 
-        label_fit = r'Fit : $\frac{\chi^2}{ndf}$' + ' : {:.2f}\n'.format(
-            self.fit_test(index=index))
+        label_fit = r'Fit : $\frac{\chi^2}{ndf}$ = ' + '{:.2f} / {} =' \
+                                                       ' : {:.2f}\n'.format(
+            self.fit_test(index=index) * self.ndf, self.ndf, self.fit_test(
+                index=index))
         line = '{} : {:.2f} $\pm$ {:.3f}\n'
         line_minos = '{name} : ' \
                      '${{{val:.2f}}}^{{+{upper:.3f}}}_{{{lower:.3f}}}$\n'

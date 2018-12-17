@@ -279,7 +279,7 @@ class Histogram1D:
 
         return text
 
-    def draw(self, index=(), axis=None, normed=False, log=False, legend=True,
+    def draw(self, index=(), errors=True, axis=None, normed=False, log=False, legend=True,
              x_label='', label='Histogram', **kwargs):
 
         if axis is None:
@@ -295,6 +295,10 @@ class Histogram1D:
         x = x[mask]
         y = y[mask]
         err = err[mask]
+
+        if errors:
+
+            err[:] = 0
 
         if normed:
 
