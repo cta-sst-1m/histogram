@@ -4,4 +4,5 @@ humanize
 iminuit
 matplotlib
 numpy
+pytest
 scipy
