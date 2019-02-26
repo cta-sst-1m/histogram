@@ -146,6 +146,27 @@ def test_load_slice():
             assert histo[0] != loaded_histo
 
 
+def test_load_slice_index_error():
+
+    histo = _make_dummy_histo()
+
+    with tempfile.NamedTemporaryFile(suffix='.fits') as f:
+
+        histo.save(f.name)
+
+        with pytest.raises(IndexError):
+
+            Histogram1D.load(f.name, rows=(2, ))
+
+        with pytest.raises(IndexError):
+
+            Histogram1D.load(f.name, rows=(-1, ))
+
+        with pytest.raises(IndexError):
+
+            Histogram1D.load(f.name, rows=-1)
+
+
 def test_load_slice_2D_1dhisto():
 
     histo = _make_dummy_2D_1dhisto()
@@ -362,7 +383,7 @@ if __name__ == '__main__':
     test_fill()
     test_fill_indices()
     test_load_slice()
-
+    test_load_slice_index_error()
     histo2d = _make_dummy_2D_1dhisto()
 
     for i in range(100):

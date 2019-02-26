@@ -432,6 +432,29 @@ def _convert_item(item, shape):
     if isinstance(item, int):
         item = (slice(item, item + 1, 1),)
 
+    for i, index in enumerate(item):
+
+        if isinstance(index, slice):
+
+            if index.start is None or index.step is None:
+
+                continue
+
+            is_valid_index = (index.start >= 0) and (index.stop <= shape[i])
+
+        elif isinstance(index, int):
+
+            is_valid_index = (index >= 0) and (index < shape[i])
+
+        elif index is None:
+
+            continue
+
+        if not is_valid_index:
+
+            raise IndexError('Could not interpret index {} for axis {} '
+                             'with dim {}'.format(index, i, shape[i]))
+
     for i in range(len(shape)):
 
         if i < len(item):
