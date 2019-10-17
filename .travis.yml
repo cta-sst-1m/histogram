@@ -9,15 +9,6 @@ matrix:
     - os: linux
       language: python
       python: 3.7
-    - os: osx
-      language: python
-      python: 3.5
-    - os: osx
-      language: python
-      python: 3.6
-    - os: osx
-      language: python
-      python: 3.7
 
 install:
 - pip install --upgrade pip
